@@ -11,12 +11,15 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
     "canvas-confetti": "^1.9.4",
+    "framer-motion": "^12.36.0",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -28,11 +31,7 @@
   }
 }
 === ./public/next.svg ===
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>=== ./public/vercel.svg ===
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>=== ./public/globe.svg ===
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>=== ./public/file.svg ===
-<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>=== ./public/window.svg ===
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>=== ./tsconfig.json ===
+./tsconfig.json ===
 {
   "compilerOptions": {
     "target": "ES2017",
@@ -203,7 +202,53 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-=== ./src/app/admin/stickers/page.tsx ===
+=== ./src/lib/admin-session.ts ===
+import "server-only";
+import crypto from "node:crypto";
+
+const COOKIE_NAME = "owner_session";
+const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+
+function getSecret() {
+  const secret = process.env.ADMIN_SECRET_KEY;
+  if (!secret) throw new Error("Missing ADMIN_SECRET_KEY");
+  return secret;
+}
+
+export function getAdminCookieName() {
+  return COOKIE_NAME;
+}
+
+export function createAdminSessionToken() {
+  const payload = { role: "owner", exp: Date.now() + SESSION_MAX_AGE * 1000 };
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", getSecret())
+    .update(encoded)
+    .digest("base64url");
+  return `${encoded}.${signature}`;
+}
+
+export function verifyAdminSessionToken(token?: string) {
+  if (!token) return false;
+  const [encoded, signature] = token.split(".");
+  if (!encoded || !signature) return false;
+  const expected = crypto
+    .createHmac("sha256", getSecret())
+    .update(encoded)
+    .digest("base64url");
+  const a = Buffer.from(signature);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  try {
+    const payload = JSON.parse(
+      Buffer.from(encoded, "base64url").toString("utf8")
+    );
+    return payload.role === "owner" && payload.exp > Date.now();
+  } catch {
+    return false;
+  }
+}=== ./src/app/admin/stickers/page.tsx ===
 "use client";
 
 import { useState, useEffect } from "react";
@@ -414,293 +459,184 @@ export default function AdminStickersPage() {
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import toast from "react-hot-toast";
+import { PlusCircle, Trash2, Database } from "lucide-react";
 
+// (Keep existing Type Definitions)
 type Question = {
-  id?: number;
-  category: string;
-  question: string;
-  option_a: string;
-  option_b: string;
-  option_c: string;
-  option_d: string;
-  correct_option: "a" | "b" | "c" | "d";
-  explanation: string;
+  id?: number; category: string; question: string;
+  option_a: string; option_b: string; option_c: string; option_d: string;
+  correct_option: "a" | "b" | "c" | "d"; explanation: string;
 };
-
 const categories = ["English", "General Knowledge", "Current Affairs", "Constitution", "Ethics"];
 
-/**
- * Admin Questions Manager
- * - Add new questions with answers
- * - View all existing questions
- * - Edit/delete questions
- */
 export default function AdminQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [status, setStatus] = useState("");
   
   const [formData, setFormData] = useState<Question>({
-    category: "English",
-    question: "",
-    option_a: "",
-    option_b: "",
-    option_c: "",
-    option_d: "",
-    correct_option: "a",
-    explanation: "",
+    category: "English", question: "", option_a: "", option_b: "",
+    option_c: "", option_d: "", correct_option: "a", explanation: "",
   });
 
-  // Load questions from Supabase
-  useEffect(() => {
-    loadQuestions();
-  }, []);
+  useEffect(() => { loadQuestions(); }, []);
 
   const loadQuestions = async () => {
     try {
-      const { data, error } = await supabase
-        .from("questions")
-        .select("*")
-        .order("id", { ascending: false });
-
+      const { data, error } = await supabase.from("questions").select("*").order("id", { ascending: false });
       if (error) throw error;
       setQuestions(data || []);
     } catch (error) {
-      setStatus("⚠️ Error loading questions. Check Supabase connection.");
-    } finally {
-      setLoading(false);
-    }
+      toast.error("Failed to load database. Check Supabase connection.");
+    } finally { setLoading(false); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus("Saving question...");
-
+    const loadingToast = toast.loading("Saving entry to database...");
     try {
       const { error } = await supabase.from("questions").insert([formData]);
-
       if (error) throw error;
 
-      setStatus("✅ Question added successfully!");
-      setFormData({
-        category: "English",
-        question: "",
-        option_a: "",
-        option_b: "",
-        option_c: "",
-        option_d: "",
-        correct_option: "a",
-        explanation: "",
-      });
-      
+      toast.success("Question locked in successfully!", { id: loadingToast });
+      setFormData({ category: "English", question: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_option: "a", explanation: "" });
+      setShowForm(false);
       loadQuestions();
-      setTimeout(() => setStatus(""), 3000);
     } catch (error) {
-      setStatus("❌ Error saving question. Check console.");
-      console.error(error);
+      toast.error("Upload failed.", { id: loadingToast });
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this question?")) return;
-
+    if (!confirm("Erase this record completely?")) return;
     try {
       const { error } = await supabase.from("questions").delete().eq("id", id);
       if (error) throw error;
-      
-      setStatus("✅ Question deleted!");
+      toast.success("Record expunged.");
       loadQuestions();
-      setTimeout(() => setStatus(""), 2000);
-    } catch (error) {
-      setStatus("❌ Error deleting question");
-    }
+    } catch (error) { toast.error("Erase failed."); }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header & Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-heading font-bold text-policeGold">Questions Database</h2>
-          <p className="text-sm text-white/60">Total: {questions.length} questions</p>
+    <div className="space-y-8 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/5 p-6 rounded-3xl border border-white/10 shadow-lg">
+        <div className="flex items-center gap-4">
+          <div className="bg-policeGold/20 p-3 rounded-full text-policeGold"><Database size={28} /></div>
+          <div>
+            <h2 className="text-2xl font-heading font-bold text-white">Questions Database</h2>
+            <p className="text-sm text-white/50">{questions.length} Active Records</p>
+          </div>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-6 py-3 rounded-full bg-policeGold text-policeBlue font-semibold hover:brightness-110 transition"
+          className={`px-6 py-3 rounded-xl flex items-center gap-2 font-bold transition ${
+            showForm ? "bg-white/10 text-white" : "bg-policeGold text-policeBlue hover:scale-105"
+          }`}
         >
-          {showForm ? "Cancel" : "+ Add New Question"}
+          {showForm ? "Cancel Entry" : <><PlusCircle size={20} /> Add Record</>}
         </button>
       </div>
 
-      {/* Status Messages */}
-      {status && (
-        <div className="card bg-white/10 border-policeGold">
-          <p className="text-center font-semibold">{status}</p>
-        </div>
-      )}
-
-      {/* Add Question Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="card space-y-4">
-          <h3 className="text-xl font-heading font-bold text-policeGold">Add New Question</h3>
+        <form onSubmit={handleSubmit} className="card space-y-5 animate-in slide-in-from-top-4 duration-300">
+          <h3 className="text-xl font-heading font-bold text-policeGold pb-2 border-b border-white/10">New Intelligence Record</h3>
+          {/* Form fields remain mostly the same, just better focus styling */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Category</label>
+              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition" required>
+                {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">The Question</label>
+              <textarea value={formData.question} onChange={(e) => setFormData({ ...formData, question: e.target.value })} className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition min-h-[100px]" required placeholder="Enter the scenario or fact..." />
+            </div>
 
-          {/* Category */}
-          <div>
-            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Category</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-              required
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Question */}
-          <div>
-            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Question</label>
-            <textarea
-              value={formData.question}
-              onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white min-h-[80px]"
-              required
-            />
-          </div>
-
-          {/* Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {(["a", "b", "c", "d"] as const).map((option) => (
               <div key={option}>
-                <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">
-                  Option {option.toUpperCase()}
-                </label>
-                <input
-                  type="text"
-                  value={formData[`option_${option}` as keyof Question] as string}
-                  onChange={(e) => setFormData({ ...formData, [`option_${option}`]: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-                  required
-                />
+                <label className="block text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">Option {option}</label>
+                <input type="text" value={formData[`option_${option}`]} onChange={(e) => setFormData({ ...formData, [`option_${option}`]: e.target.value })} className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition" required />
               </div>
             ))}
-          </div>
 
-          {/* Correct Answer */}
-          <div>
-            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Correct Answer</label>
-            <select
-              value={formData.correct_option}
-              onChange={(e) => setFormData({ ...formData, correct_option: e.target.value as "a" | "b" | "c" | "d" })}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-              required
-            >
-              <option value="a">A</option>
-              <option value="b">B</option>
-              <option value="c">C</option>
-              <option value="d">D</option>
-            </select>
+            <div>
+              <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Correct Target</label>
+              <select value={formData.correct_option} onChange={(e) => setFormData({ ...formData, correct_option: e.target.value as "a" | "b" | "c" | "d" })} className="w-full bg-black/40 border border-white/10 focus:border-policeGreen rounded-xl px-4 py-3 text-white outline-none transition" required>
+                {["a", "b", "c", "d"].map(opt => <option key={opt} value={opt}>Option {opt.toUpperCase()}</option>)}
+              </select>
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Debriefing (Explanation)</label>
+              <textarea value={formData.explanation} onChange={(e) => setFormData({ ...formData, explanation: e.target.value })} className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition min-h-[80px]" required />
+            </div>
           </div>
-
-          {/* Explanation */}
-          <div>
-            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Explanation</label>
-            <textarea
-              value={formData.explanation}
-              onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white min-h-[60px]"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-3 rounded-full bg-policeGold text-policeBlue font-semibold hover:brightness-110 transition"
-          >
-            Save Question
-          </button>
+          <button type="submit" className="w-full py-4 mt-4 rounded-xl bg-policeGold text-policeBlue font-bold uppercase tracking-widest hover:brightness-110 active:scale-95 transition">Commit Record</button>
         </form>
       )}
 
-      {/* Questions List */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-heading font-bold text-policeGold">All Questions</h3>
-        
+      <div className="grid gap-4">
         {loading ? (
-          <p className="text-white/60">Loading questions...</p>
-        ) : questions.length === 0 ? (
-          <div className="card text-center">
-            <p className="text-white/60">No questions yet. Add your first question above!</p>
-          </div>
-        ) : (
-          questions.map((q) => (
-            <div key={q.id} className="card space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <span className="text-xs uppercase tracking-[0.3em] text-white/60">{q.category}</span>
-                  <h4 className="text-lg font-semibold text-policeGold mt-1">{q.question}</h4>
-                </div>
-                <button
-                  onClick={() => q.id && handleDelete(q.id)}
-                  className="text-policeRed text-sm hover:brightness-110"
-                >
-                  Delete
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {(["a", "b", "c", "d"] as const).map((option) => (
-                  <div
-                    key={option}
-                    className={`px-3 py-2 rounded-lg border ${
-                      q.correct_option === option
-                        ? "border-policeGreen bg-policeGreen/10 text-policeGreen"
-                        : "border-white/10 text-white/70"
-                    }`}
-                  >
-                    <span className="font-bold">{option.toUpperCase()}:</span> {q[`option_${option}` as keyof Question]}
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-xs text-white/60 italic">💡 {q.explanation}</p>
+           <p className="text-center text-white/50 py-10">Accessing archives...</p>
+        ) : questions.map((q) => (
+          <div key={q.id} className="bg-white/5 border border-white/10 hover:border-white/20 transition-colors rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row gap-6 justify-between items-start">
+            <div className="space-y-3 flex-1">
+              <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-policeGold bg-policeGold/10 px-2 py-1 rounded">{q.category}</span>
+              <h4 className="text-lg font-semibold text-white leading-snug">{q.question}</h4>
+              <p className="text-sm text-white/50 bg-black/30 p-3 rounded-lg border border-white/5">💡 {q.explanation}</p>
             </div>
-          ))
-        )}
+            <button onClick={() => q.id && handleDelete(q.id)} className="shrink-0 p-3 bg-policeRed/10 text-policeRed rounded-xl hover:bg-policeRed hover:text-white transition group">
+              <Trash2 size={20} className="group-hover:scale-110 transition-transform"/>
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
-}
-=== ./src/app/admin/layout.tsx ===
+}=== ./src/app/admin/layout.tsx ===
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { getAdminCookieName, verifyAdminSessionToken } from "@/lib/admin-session";
+import AdminLogoutButton from "@/components/AdminLogoutButton";
+import AdminLoginForm from "@/components/AdminLoginForm";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+const secretPath = process.env.SECRET_ADMIN_PATH || "word";
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(getAdminCookieName())?.value;
+  const isAuthenticated = verifyAdminSessionToken(token);
+
+  // Not logged in → show login form
+  if (!isAuthenticated) {
+    return <AdminLoginForm />;
+  }
+
+  // Logged in → show full admin interface
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#030712]">
       <div className="border-b border-white/10 bg-white/5 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-heading font-bold text-policeGold">Admin Dashboard</h1>
-              <p className="text-xs text-white/60">Manage questions and stickers</p>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-heading font-bold text-policeGold">Admin Dashboard</h1>
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-sm text-white/70 hover:text-policeGold">← Home</Link>
+              <AdminLogoutButton />
             </div>
-            <Link href="/" className="text-sm text-white/70 hover:text-policeGold transition">
-              ← Back to Home
-            </Link>
           </div>
-          
+
           <nav className="mt-4 flex gap-4">
-            <Link 
-              href="/admin" 
+            <Link
+              href={`/${secretPath}`}
               className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
             >
               Questions
             </Link>
-            <Link 
-              href="/admin/stickers" 
+            <Link
+              href={`/${secretPath}/stickers`}
               className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
             >
               Stickers
@@ -708,14 +644,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
         </div>
       </div>
-      
-      <div className="container mx-auto px-4 py-8">
-        {children}
-      </div>
+
+      <div className="container mx-auto px-4 py-8">{children}</div>
     </div>
   );
-}
-=== ./src/app/globals.css ===
+}=== ./src/app/globals.css ===
 @import "tailwindcss";
 
 :root {
@@ -742,7 +675,51 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
-=== ./src/app/leaderboard/page.tsx ===
+=== ./src/app/api/admin/logout/route.ts ===
+import { NextResponse } from "next/server";
+import { getAdminCookieName } from "@/lib/admin-session";
+
+export async function POST() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set(getAdminCookieName(), "", { maxAge: 0, path: "/" });
+  return response;
+}=== ./src/app/api/admin/login/route.ts ===
+import { NextResponse } from "next/server";
+import crypto from "node:crypto";
+import {
+  createAdminSessionToken,
+  getAdminCookieName,
+} from "@/lib/admin-session";
+
+export async function POST(req: Request) {
+  const { secretKey } = await req.json();
+  const expected = process.env.ADMIN_SECRET_KEY;
+
+  if (
+    !secretKey ||
+    !expected ||
+    !crypto.timingSafeEqual(
+      Buffer.from(secretKey),
+      Buffer.from(expected)
+    )
+  ) {
+    return NextResponse.json({ message: "Invalid Access" }, { status: 401 });
+  }
+
+  const response = NextResponse.json({ success: true });
+  response.cookies.set({
+    name: getAdminCookieName(),
+    value: createAdminSessionToken(),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  return response;
+}=== ./src/app/leaderboard/page.tsx ===
+import { Trophy, Medal, Award } from "lucide-react";
+
 const leaderboard = [
   { name: "Aminat", points: 480 },
   { name: "Chike", points: 450 },
@@ -751,47 +728,71 @@ const leaderboard = [
   { name: "Bolanle", points: 390 },
 ];
 
+function getRankIcon(rank: number) {
+  switch(rank) {
+    case 1: return <Trophy className="text-yellow-400" size={24} />;
+    case 2: return <Medal className="text-gray-300" size={24} />;
+    case 3: return <Medal className="text-amber-600" size={24} />;
+    default: return <Award className="text-white/20" size={20} />;
+  }
+}
+
 type RowProps = { rank: number; name: string; points: number };
 
 function Row({ rank, name, points }: RowProps) {
+  const isTop3 = rank <= 3;
   return (
-    <div className="flex items-center justify-between rounded-3xl border border-white/10 bg-white/5 px-5 py-3 text-sm">
-      <div className="flex items-center gap-3">
-        <span className="text-lg font-heading text-policeGold">{rank}.</span>
+    <div className={`flex items-center justify-between rounded-2xl border px-6 py-4 transition-transform hover:scale-[1.02]
+      ${rank === 1 ? "bg-yellow-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]" : "bg-white/5 border-white/10"}
+    `}>
+      <div className="flex items-center gap-4 sm:gap-6">
+        <div className="w-10 text-center flex justify-center">{getRankIcon(rank)}</div>
         <div>
-          <p className="font-semibold text-white">{name}</p>
-          <p className="text-xs text-white/60">Aspiring Recruit</p>
+          <p className={`font-bold text-lg ${isTop3 ? "text-white" : "text-white/80"}`}>{name}</p>
+          <p className="text-[10px] uppercase tracking-widest text-white/40">Recruit Class '25</p>
         </div>
       </div>
-      <p className="font-semibold text-policeGreen">{points} pts</p>
+      <div className="text-right">
+        <p className={`font-mono font-bold text-xl ${rank === 1 ? "text-yellow-400" : "text-policeGreen"}`}>
+          {points}
+        </p>
+        <p className="text-[10px] uppercase tracking-widest text-white/40">PTS</p>
+      </div>
     </div>
   );
 }
 
 export default function LeaderboardPage() {
   return (
-    <div className="space-y-8 px-4 pb-10">
-      <header className="mx-auto max-w-3xl text-center">
-        <p className="text-xs uppercase tracking-[0.5em] text-white/60">Weekly leaderboard</p>
-        <h1 className="text-3xl font-heading font-bold text-policeGold">Top Recruits</h1>
-        <p className="text-white/70">Practice daily to climb the ranks and stay inspired.</p>
+    <div className="space-y-10 px-4 pb-12">
+      <header className="mx-auto max-w-2xl text-center space-y-4">
+        <div className="inline-flex justify-center p-4 bg-white/5 rounded-full mb-2">
+          <Trophy size={40} className="text-policeGold" />
+        </div>
+        <h1 className="text-4xl sm:text-5xl font-heading font-bold text-white tracking-tight">Wall of Honor</h1>
+        <p className="text-white/60 text-lg">Daily standouts leading the charge. Keep practicing to secure your spot.</p>
       </header>
-      <section className="mx-auto max-w-3xl space-y-3">
+      
+      <section className="mx-auto max-w-2xl space-y-3">
         {leaderboard.map((item, index) => (
           <Row key={item.name} rank={index + 1} name={item.name} points={item.points} />
         ))}
       </section>
     </div>
   );
-}
-=== ./src/app/practice/page.tsx ===
+}=== ./src/app/practice/page.tsx ===
 "use client";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import QuestionCard from "@/components/QuestionCard";
 import BadgeChip from "@/components/BadgeChip";
+import { motion } from "framer-motion";
+import { Zap, Crown, Flame } from "lucide-react";
 
+export type Sticker = { id: number; url: string; active: boolean };
+
+// Type definitions remain the same...
 type SupaRow = {
   id: number;
   category: string;
@@ -815,36 +816,40 @@ type Question = {
 
 export default function PracticePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [stickers, setStickers] = useState<Sticker[]>([]);
   const [state, setState] = useState({ index: 0, points: 0, streak: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch questions once on mount
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from<SupaRow>("questions")
+      // Fetch Questions
+      const { data: qData, error: qError } = await supabase
+        .from<"questions", SupaRow>("questions")
         .select("*")
         .order("id", { ascending: true });
 
-      if (error) {
-        console.error("Supabase fetch error:", error);
+      // Fetch active Stickers
+      const { data: sData } = await supabase
+        .from("stickers")
+        .select("*")
+        .eq("active", true);
+
+      if (sData) setStickers(sData);
+
+      if (qError) {
         setError("Failed to load questions. Refresh to retry.");
-      } else if (data) {
-        const mapped = data.map((q) => ({
+      } else if (qData) {
+        const mapped = qData.map((q) => ({
           id: q.id,
           category: q.category,
           question: q.question,
-          options: {
-            a: q.option_a,
-            b: q.option_b,
-            c: q.option_c,
-            d: q.option_d,
-          },
+          options: { a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d },
           correct: q.correct_option,
           explanation: q.explanation,
         }));
-        setQuestions(mapped);
+        // Shuffle questions for practice
+        setQuestions(mapped.sort(() => Math.random() - 0.5));
       }
       setLoading(false);
     })();
@@ -852,32 +857,30 @@ export default function PracticePage() {
 
   const handleAnswer = (correct: boolean) => {
     setState((prev) => ({
-      index: (prev.index + 1) % questions.length,
+      index: prev.index, // We keep the index on until they hit "Next Question"
       points: prev.points + (correct ? 10 : 0),
       streak: correct ? prev.streak + 1 : 0,
     }));
   };
 
+  const nextQuestion = () => {
+    setState(prev => ({ ...prev, index: (prev.index + 1) % questions.length }));
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-white/60">
-        Loading questions…
+      <div className="flex flex-col items-center justify-center h-64 opacity-50 space-y-4">
+        <div className="w-12 h-12 border-4 border-policeGold border-t-transparent rounded-full animate-spin"></div>
+        <p className="uppercase tracking-widest text-sm font-semibold">Deploying Mock Tests...</p>
       </div>
     );
   }
 
-  if (error) {
+  if (error || questions.length === 0) {
     return (
-      <div className="card bg-policeRed/10 border border-policeRed p-6 text-center">
-        <p className="text-policeRed font-semibold">{error}</p>
-      </div>
-    );
-  }
-
-  if (questions.length === 0) {
-    return (
-      <div className="card p-6 text-center text-white/60">
-        No questions found. Add some in the <strong>/admin</strong> page.
+      <div className="card border border-policeRed/50 p-8 text-center bg-policeRed/5 mx-auto max-w-2xl mt-10">
+        <p className="text-policeRed font-semibold text-xl mb-2">Sector Clear (No Questions)</p>
+        <p className="text-white/60">Head over to the admin panel to dispatch some questions.</p>
       </div>
     );
   }
@@ -885,37 +888,51 @@ export default function PracticePage() {
   const q = questions[state.index];
 
   return (
-    <div className="space-y-8 px-4 pb-10">
-      <header className="mx-auto max-w-3xl space-y-2 text-center">
-        <p className="text-xs uppercase tracking-[0.5em] text-white/50">
-          Mock Practice Arena
-        </p>
-        <h1 className="text-3xl font-heading font-bold text-policeGold">
-          Level up for screening
+    <div className="space-y-8 pb-10">
+      <header className="mx-auto max-w-3xl space-y-4 text-center">
+        <h1 className="text-3xl font-heading font-bold text-policeGold uppercase tracking-widest">
+          Practice Ground
         </h1>
-        <p className="text-white/70">
-          Every session resets the questions so you stay sharp. Badges, streaks,
-          and humor keep motivation high.
-        </p>
-        <div className="flex flex-wrap justify-center gap-4 pt-3">
-          <div className="rounded-2xl border border-white/10 px-6 py-3">
-            <p className="text-xs text-white/50">Points</p>
-            <p className="text-lg font-semibold">{state.points}</p>
+        
+        {/* Real-time stats */}
+        <div className="flex justify-center gap-3 sm:gap-6 pt-2">
+          <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 px-5 py-3 shadow-lg">
+            <Zap className="text-policeGold" size={24} />
+            <div className="text-left">
+              <p className="text-[10px] uppercase tracking-widest text-white/50">Points</p>
+              <p className="text-xl font-bold">{state.points}</p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-white/10 px-6 py-3">
-            <p className="text-xs text-white/50">Current Streak</p>
-            <p className="text-lg font-semibold">{state.streak}</p>
+          <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 px-5 py-3 shadow-lg">
+            <Flame className={state.streak > 2 ? "text-policeRed animate-pulse" : "text-orange-400"} size={24} />
+            <div className="text-left">
+              <p className="text-[10px] uppercase tracking-widest text-white/50">Streak</p>
+              <p className="text-xl font-bold">{state.streak}</p>
+            </div>
           </div>
         </div>
       </header>
 
-      <QuestionCard question={q} onAnswer={handleAnswer} />
+      <motion.div
+        key={state.index}
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -50 }}
+        transition={{ duration: 0.4 }}
+      >
+        <QuestionCard 
+          question={q} 
+          onAnswer={handleAnswer} 
+          onNext={nextQuestion}
+          stickers={stickers}
+        />
+      </motion.div>
 
-      <section className="mx-auto max-w-3xl space-y-2">
-        <p className="text-xs uppercase tracking-[0.5em] text-white/60">
-          Badges on the horizon
+      <section className="mx-auto max-w-2xl mt-12 bg-white/5 rounded-3xl p-6 border border-white/10 text-center">
+        <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-4 flex items-center justify-center gap-2">
+          <Crown size={14} /> Badges Unlocked
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <BadgeChip label="Rookie" earned={state.points >= 10} />
           <BadgeChip label="Detective" earned={state.points >= 50} />
           <BadgeChip label="Sharp Shooter" earned={state.streak >= 5} />
@@ -924,55 +941,77 @@ export default function PracticePage() {
       </section>
     </div>
   );
-}
-=== ./src/app/page.tsx ===
+}=== ./src/app/page.tsx ===
+"use client";
+
 import Link from "next/link";
 import BadgeChip from "@/components/BadgeChip";
+import { motion } from "framer-motion";
+import { ArrowRight, Trophy, ShieldUser } from "lucide-react";
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col items-center justify-center gap-8 px-4 py-10 text-center">
-      <section className="card w-full max-w-4xl space-y-5 text-center">
-        <p className="text-xs uppercase tracking-[0.5em] text-white/60">Mock Screening Exam</p>
-        <h2 className="text-4xl font-heading font-bold text-policeGold">Practice with the vibe of a recruit.</h2>
-        <p className="text-white/80">
-          Daily mocks, instant feedback, badges, and funny WhatsApp stickers to keep you smiling even when you miss a question.
+    <div className="flex flex-col items-center justify-center gap-8 py-10 text-center">
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="card w-full max-w-4xl space-y-6 text-center shadow-2xl backdrop-blur-md rounded-[2.5rem] p-8 sm:p-12 border-white/20 relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-policeGreen via-policeGold to-policeRed"></div>
+        
+        <p className="text-xs sm:text-sm uppercase tracking-[0.5em] text-white/60 font-semibold">
+          Final Screening Preparation
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
+        
+        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-policeGold leading-tight">
+          Think You Have <br /> What It Takes?
+        </h2>
+        
+        <p className="text-white/80 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
+          Daily mocks, instant feedback, recruit badges, and funny WhatsApp stickers to keep you smiling when the pressure hits.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
           <Link 
             href="/practice" 
-            className="rounded-full bg-policeGold px-6 py-3 font-semibold uppercase tracking-[0.4em] text-policeBlue transition hover:brightness-110"
+            className="flex items-center gap-2 rounded-full bg-policeGold px-8 py-4 font-bold uppercase tracking-[0.3em] text-policeBlue transition hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,215,0,0.3)] w-full sm:w-auto justify-center"
           >
-            Start Practice
+            Start Practice <ArrowRight size={20} />
           </Link>
           <Link 
             href="/leaderboard" 
-            className="rounded-full border border-white/30 px-6 py-3 uppercase tracking-[0.4em] text-white/80"
+            className="flex items-center gap-2 rounded-full border border-white/30 bg-white/5 backdrop-blur px-8 py-4 font-bold uppercase tracking-[0.3em] text-white hover:bg-white/10 transition w-full sm:w-auto justify-center"
           >
-            Leaderboard
-          </Link>
-          <Link 
-            href="/admin" 
-            className="rounded-full border border-policeGold/50 px-6 py-3 uppercase tracking-[0.4em] text-policeGold hover:bg-policeGold/10"
-          >
-            Admin
+            <Trophy size={18} /> Rankings
           </Link>
         </div>
-        <div className="flex flex-wrap justify-center gap-2">
+      </motion.section>
+
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.8 }}
+        className="flex flex-col items-center gap-4 mt-8"
+      >
+        <p className="text-sm text-white/50 uppercase tracking-widest flex items-center gap-2">
+          <ShieldUser size={16} /> Earn Ranks as you go
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
           <BadgeChip label="Rookie" earned />
           <BadgeChip label="Detective" earned={false} />
           <BadgeChip label="Sharp Shooter" earned={false} />
         </div>
-      </section>
+      </motion.div>
     </div>
   );
-}
-=== ./src/app/favicon.ico ===
-
-=== ./src/app/layout.tsx ===
+}=== ./src/app/layout.tsx ===
 import "@/styles/globals.css";
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
+import { Toaster } from "react-hot-toast";
+import Link from "next/link";
+import { ShieldAlert } from "lucide-react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const poppins = Poppins({
@@ -982,52 +1021,123 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Recruit Arena — Nigeria Police Mock Exam",
+  title: "Recruit — Nigeria Police Mock Exam",
   description: "Gamified mock questions, funny stickers, and badges for Nigerian police aspirants.",
+  icons: {
+    icon: "/image%20(9).jpg",
+    shortcut: "/image%20(9).jpg",
+    apple: "/image%20(9).jpg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
-      <body className="bg-gradient-to-b from-policeBlue via-[#030712] to-[#000] min-h-screen text-white">
+      <body className="bg-gradient-to-b from-policeBlue via-[#030712] to-[#000] min-h-screen text-white font-sans selection:bg-policeGold selection:text-policeBlue">
+        <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
+        
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-12">
-          <header className="pt-6 pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.5em] text-white/60">Nigeria Police 2025/2026</p>
-                <h1 className="text-3xl font-heading font-semibold text-policeGold">Recruit Arena</h1>
+          <header className="pt-8 pb-6 border-b border-white/10 mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="bg-policeGold p-2 rounded-xl text-policeBlue">
+                  <ShieldAlert size={28} />
+                </div>
+                <div>
+                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.5em] text-white/60">Nigeria Police 2025/2026</p>
+                  <h1 className="text-2xl sm:text-3xl font-heading font-semibold text-policeGold tracking-wide">Recruit Arena</h1>
+                </div>
+              </Link>
+              <div className="flex gap-4 items-center">
+                <Link href="/practice" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Practice</Link>
+                <Link href="/leaderboard" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Rankings</Link>
+                {/* <Link href="/admin" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Admin</Link> */}
               </div>
-              <span className="text-xs uppercase tracking-[0.4em] text-white/60">Screening Prep</span>
             </div>
           </header>
-          <main className="flex-1">{children}</main>
-          <footer className="mt-10 text-center text-xs uppercase tracking-[0.6em] text-white/50">
+          
+          <main className="flex-1 w-full">{children}</main>
+          
+          <footer className="mt-16 text-center text-xs uppercase tracking-[0.6em] text-white/40">
             Built with discipline, humour, and confetti 🎉
           </footer>
         </div>
       </body>
     </html>
   );
-}
-=== ./src/components/QuestionCard.tsx ===
+}=== ./src/components/QuestionCard.tsx ===
 "use client";
 
 import { useState } from "react";
 import confetti from "canvas-confetti";
-import type { Question } from "@/lib/questions";
+import { motion } from "framer-motion";
+import { CheckCircle2, XCircle, ArrowRight, AlertTriangle } from "lucide-react";
+
+export type Sticker = { 
+  id: number; 
+  url: string; 
+  active: boolean 
+};
+
+export type Question = {
+  id: number;
+  category: string;
+  question: string;
+  options: Record<"a" | "b" | "c" | "d", string>;
+  correct: "a" | "b" | "c" | "d";
+  explanation: string;
+};
 
 type Props = {
   question: Question;
+  stickers: Sticker[];
   onAnswer: (correct: boolean) => void;
+  onNext: () => void;
 };
 
-/**
- * Shows a question with options, gives instant feedback,
- * triggers confetti on success. Sticker support is disabled until Supabase is configured.
- */
-export default function QuestionCard({ question, onAnswer }: Props) {
+// Our collection of hilarious Nigerian Police banter
+const policeBanter = [
+  "Let's not arrest the correct answer next time, recruit.",
+  "Ah ah! Are you suspecting the right answer?",
+  "Even the IG of Police is shaking his head right now.",
+  "This your answer is tracing its way directly to the holding cell.",
+  "You missed this one? EFCC might invite you for questioning.",
+  "Are you sure you want to be a recruit or you are just passing by?",
+  "Oga, park this your answer well well!",
+  "Your village people are currently writing a statement against you.",
+  "Try again! This one is a complete accidental discharge.",
+  "Warrant of arrest issued for this your answer!",
+  "If this were the physical screening, you'd be doing frog jump by now.",
+  "You are driving one-way with this answer. Reverse!",
+  "Let's not arrest the correct answer next time 😭",
+  "Even the gateman at Force HQ knows this one 💀",
+  "Oga, na guessing you dey guess? 🤦‍♂️",
+  "Your village people are working overtime on this exam 😩",
+  "Bro picked the wrong suspect from the lineup 🕵️",
+  "This one na criminal answer o! Case dismissed 🧑‍⚖️",
+  "CP is reviewing your file... it's not looking good 📁",
+  "You for just sleep today instead of this performance 😴",
+  "Your answer just posted bail and left the station 🏃‍♂️",
+  "Even Siri would have gotten this right 🤖",
+  "DPO wants to see you in his office... now 🚨",
+  "This is why they invented extra lessons 📚",
+  "Chai! Who sent you to apply sef? 😂",
+  "Na only prayer fit save this your result 🙏",
+  "If this was a real exam, your pen would have cried 🖊️😢",
+  "The correct answer was waving at you and you still missed it 👋",
+  "Alert! Wrong answer detected in Sector 7 🚔",
+  "Bro is giving 'I didn't read' energy 📖❌",
+  "Your future CO just shed a tear somewhere 😢",
+  "You just got a yellow card from the exam referee 🟨",
+  "Please return your application form immediately 📝🔙",
+  "This answer has been filed under 'wahala' 🗂️",
+];
+
+export default function QuestionCard({ question, stickers, onAnswer, onNext }: Props) {
   const [selected, setSelected] = useState<"a" | "b" | "c" | "d" | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [activeSticker, setActiveSticker] = useState<string | null>(null);
+  const [activeBanter, setActiveBanter] = useState<string>("");
 
   const handleSubmit = () => {
     if (!selected) return;
@@ -1035,10 +1145,20 @@ export default function QuestionCard({ question, onAnswer }: Props) {
 
     if (correct) {
       confetti({ 
-        particleCount: 80, 
-        spread: 90, 
+        particleCount: 120, 
+        spread: 100, 
+        origin: { y: 0.6 },
         colors: ["#FFD700", "#ffffff", "#28a745"] 
       });
+    } else {
+      // Pick a random sticker if available
+      if (stickers && stickers.length > 0) {
+        const randomSticker = stickers[Math.floor(Math.random() * stickers.length)];
+        setActiveSticker(randomSticker.url);
+      }
+      // Pick a random banter quote
+      const randomBanter = policeBanter[Math.floor(Math.random() * policeBanter.length)];
+      setActiveBanter(randomBanter);
     }
 
     setSubmitted(true);
@@ -1046,29 +1166,45 @@ export default function QuestionCard({ question, onAnswer }: Props) {
   };
 
   return (
-    <div className="card w-full max-w-2xl mx-auto space-y-5">
-      <div>
-        <p className="text-xs uppercase tracking-[0.5em] text-white/60">{question.category}</p>
-        <h3 className="text-2xl font-semibold font-heading text-policeGold mt-2">{question.question}</h3>
+    <div className="card w-full max-w-2xl mx-auto space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-lg border border-white/10">
+      <div className="flex justify-between items-start">
+        <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.3em] text-policeGold font-semibold">
+          {question.category}
+        </span>
       </div>
+      
+      <h3 className="text-2xl sm:text-3xl font-semibold font-heading text-white leading-tight">
+        {question.question}
+      </h3>
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 mt-4">
         {(["a", "b", "c", "d"] as const).map((option) => {
           const isCorrect = option === question.correct;
+          const isSelected = selected === option;
+          
+          let stateStyle = "border-white/10 hover:border-white/30 hover:bg-white/5";
+          if (isSelected && !submitted) stateStyle = "border-policeGold bg-policeGold/10";
+          if (submitted && isCorrect) stateStyle = "bg-policeGreen/20 border-policeGreen text-policeGreen";
+          if (submitted && isSelected && !isCorrect) stateStyle = "bg-policeRed/20 border-policeRed text-policeRed";
+
           return (
             <button
               key={option}
               onClick={() => !submitted && setSelected(option)}
               className={`
-                flex flex-col rounded-2xl border px-4 py-3 text-left transition
-                ${selected === option ? "border-policeGold bg-white/10" : "border-white/10"}
-                ${submitted && isCorrect ? "bg-policeGreen/20 border-policeGreen text-policeGreen" : ""}
-                ${submitted && !isCorrect && selected === option ? "border-policeRed text-policeRed" : ""}
+                group flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all duration-300
+                ${stateStyle}
               `}
               disabled={submitted}
             >
-              <span className="text-xs uppercase tracking-[0.4em] text-white/50">{option.toUpperCase()}</span>
-              <p className="text-lg font-medium mt-1">{question.options[option]}</p>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-colors
+                ${isSelected && !submitted ? "bg-policeGold text-black" : "bg-white/10 group-hover:bg-white/20"}
+                ${submitted && isCorrect ? "bg-policeGreen text-white" : ""}
+                ${submitted && isSelected && !isCorrect ? "bg-policeRed text-white" : ""}
+              `}>
+                {option.toUpperCase()}
+              </div>
+              <p className="text-base sm:text-lg font-medium select-none">{question.options[option]}</p>
             </button>
           );
         })}
@@ -1078,31 +1214,86 @@ export default function QuestionCard({ question, onAnswer }: Props) {
         <button
           onClick={handleSubmit}
           disabled={!selected}
-          className="w-full rounded-full bg-policeGold py-3 text-center font-semibold text-policeBlue transition hover:brightness-110 disabled:opacity-40"
+          className="w-full mt-6 rounded-2xl bg-policeGold py-4 text-center font-bold uppercase tracking-widest text-policeBlue transition hover:brightness-110 disabled:opacity-30 disabled:scale-100 hover:scale-[1.02] active:scale-95 shadow-lg"
         >
-          Submit Answer
+          Submit 
         </button>
       ) : (
-        <div className="space-y-3">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
+          className="space-y-6 mt-6 p-6 rounded-2xl bg-black/40 border border-white/5"
+        >
           {selected === question.correct ? (
-            <p className="text-policeGreen font-bold">✅ Correct! Keep that streak alive.</p>
+            <div className="flex items-start gap-4 text-policeGreen">
+              <CheckCircle2 size={28} className="mt-1 shrink-0" />
+              <div>
+                <p className="font-bold text-xl sm:text-2xl tracking-wide">Target Neutralized!</p>
+                <p className="text-sm text-policeGreen/80 mt-2 font-medium bg-policeGreen/10 p-4 rounded-xl border border-policeGreen/20">
+                  <span className="text-white block mb-1 uppercase tracking-widest text-[10px]">Debriefing:</span>
+                  {question.explanation}
+                </p>
+              </div>
+            </div>
           ) : (
-            <>
-              <p className="text-policeRed font-bold">
-                ❌ Incorrect. The right answer is {question.options[question.correct]}.
-              </p>
-              <p className="text-xs text-white/70">{question.explanation}</p>
-              <p className="text-sm text-purple-400 mt-4">
-                💡 Connect Supabase to enable funny WhatsApp stickers when you miss questions!
-              </p>
-            </>
+            <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+              <div className="flex-1 flex flex-col gap-3 w-full">
+                <div className="flex items-center gap-2 text-policeRed">
+                  <XCircle size={24} className="shrink-0" />
+                  <p className="font-bold text-xl uppercase tracking-wider">Misfire.</p>
+                </div>
+                
+                {/* The Banter Section */}
+                <div className="flex gap-3 bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl text-orange-400">
+                  <AlertTriangle size={20} className="shrink-0 mt-0.5" />
+                  <p className="font-medium italic text-sm sm:text-base">
+                    "{activeBanter}"
+                  </p>
+                </div>
+
+                <p className="text-sm text-white/70 mt-2 bg-white/5 p-4 rounded-xl border border-white/10">
+                  <span className="font-semibold text-policeGold block mb-1 uppercase tracking-widest text-[10px]">Debriefing:</span> 
+                  {question.explanation}
+                </p>
+              </div>
+              
+              {/* WhatsApp Sticker Display */}
+              {activeSticker && (
+                <motion.div 
+                  initial={{ rotate: -15, scale: 0.5, opacity: 0 }} 
+                  animate={{ rotate: 5, scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", bounce: 0.6, duration: 0.8 }}
+                  className="w-32 h-32 sm:w-40 sm:h-40 shrink-0 mt-2 sm:mt-0"
+                >
+                  <img src={activeSticker} alt="Reaction" className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+                </motion.div>
+              )}
+            </div>
           )}
-        </div>
+
+          <button
+            onClick={onNext}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 py-4 text-center font-bold text-white transition active:scale-95 border border-white/10"
+          >
+            Next Question <ArrowRight size={18} />
+          </button>
+        </motion.div>
       )}
     </div>
   );
-}
-=== ./src/components/BadgeChip.tsx ===
+}=== ./src/components/AdminLogoutButton.tsx ===
+"use client";
+
+import { useRouter } from "next/navigation";
+
+export default function AdminLogoutButton() {
+  const router = useRouter();
+  const handleLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  };
+  return <button onClick={handleLogout} className="text-xs text-red-400">Logout</button>;
+}=== ./src/components/BadgeChip.tsx ===
 "use client";
 
 type Props = {
@@ -1127,7 +1318,67 @@ export default function BadgeChip({ label, earned }: Props) {
     </span>
   );
 }
-=== ./next-env.d.ts ===
+=== ./src/components/AdminLoginForm.tsx ===
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function AdminLoginForm() {
+  const router = useRouter();
+  const [secretKey, setSecretKey] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secretKey }),
+    });
+
+    if (res.ok) {
+      router.refresh();           // Important: refresh so layout sees the cookie
+    } else {
+      setError("Invalid access key");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#030712]">
+      <form onSubmit={handleLogin} className="card w-full max-w-sm space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-policeGold">Admin Access</h2>
+          <p className="text-white/60 text-sm mt-2">Enter secret key</p>
+        </div>
+
+        <input
+          type="password"
+          value={secretKey}
+          onChange={(e) => setSecretKey(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:border-policeGold outline-none"
+          placeholder="Secret Key"
+          disabled={loading}
+        />
+
+        {error && <p className="text-red-400 text-center text-sm">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition disabled:opacity-60"
+        >
+          {loading ? "Verifying..." : "Unlock Admin"}
+        </button>
+      </form>
+    </div>
+  );
+}=== ./next-env.d.ts ===
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
 import "./.next/dev/types/routes.d.ts";
@@ -1137,16 +1388,41 @@ import "./.next/dev/types/routes.d.ts";
 === ./.env.local ===
 NEXT_PUBLIC_SUPABASE_URL=https://ifrxmoftzfyhfyconvxa.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_L46MVFq3CN3qbKkWyoPszA_2wLpHlOD
-=== ./next.config.ts ===
+ADMIN_SECRET_KEY=arena-2026
+SECRET_ADMIN_PATH=word=== ./.vercel/README.txt ===
+> Why do I have a folder named ".vercel" in my project?
+The ".vercel" folder is created when you link a directory to a Vercel project.
+
+> What does the "project.json" file contain?
+The "project.json" file contains:
+- The ID of the Vercel project that you linked ("projectId")
+- The ID of the user or team your Vercel project is owned by ("orgId")
+
+> Should I commit the ".vercel" folder?
+No, you should not share the ".vercel" folder with anyone.
+Upon creation, it will be automatically added to your ".gitignore" file.
+=== ./.vercel/project.json ===
+{"projectId":"prj_jdDhFhZK7V3qkNJ2qiPETJTsDrYv","orgId":"team_vsfkV81Jbi7nMxTg05QZatdM","projectName":"npfmoc"}=== ./next.config.ts ===
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
+  async rewrites() {
+    const adminPath = process.env.SECRET_ADMIN_PATH || "admin";
+    return [
+      {
+        source: `/${adminPath}`,
+        destination: "/admin",
+      },
+      {
+        source: `/${adminPath}/:path*`,
+        destination: "/admin/:path*",
+      },
+    ];
+  },
 };
 
-export default nextConfig;
-=== ./postcss.config.js ===
+export default nextConfig;=== ./postcss.config.js ===
 module.exports = {
   plugins: {
     tailwindcss: {},

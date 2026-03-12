@@ -148,7 +148,7 @@ export default function QuestionCard({ question, stickers, onAnswer, onNext }: P
           disabled={!selected}
           className="w-full mt-6 rounded-2xl bg-policeGold py-4 text-center font-bold uppercase tracking-widest text-policeBlue transition hover:brightness-110 disabled:opacity-30 disabled:scale-100 hover:scale-[1.02] active:scale-95 shadow-lg"
         >
-          Lock into Database
+          Submit 
         </button>
       ) : (
         <motion.div 

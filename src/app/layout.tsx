@@ -13,8 +13,13 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Recruit Arena — Nigeria Police Mock Exam",
+  title: "Recruit — Nigeria Police Mock Exam",
   description: "Gamified mock questions, funny stickers, and badges for Nigerian police aspirants.",
+  icons: {
+    icon: "/image%20(9).jpg",
+    shortcut: "/image%20(9).jpg",
+    apple: "/image%20(9).jpg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -38,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="flex gap-4 items-center">
                 <Link href="/practice" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Practice</Link>
                 <Link href="/leaderboard" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Rankings</Link>
-                <Link href="/admin" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Admin</Link>
+                {/* <Link href="/admin" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Admin</Link> */}
               </div>
             </div>
           </header>
