@@ -1,0 +1,1228 @@
+=== ./package.json ===
+{
+  "name": "police-mock-exam",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.1",
+    "canvas-confetti": "^1.9.4",
+    "lucide-react": "^0.577.0",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.27",
+    "babel-plugin-react-compiler": "1.0.0",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5"
+  }
+}
+=== ./public/next.svg ===
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>=== ./public/vercel.svg ===
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>=== ./public/globe.svg ===
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>=== ./public/file.svg ===
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>=== ./public/window.svg ===
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>=== ./tsconfig.json ===
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+=== ./README.md ===
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+=== ./src/styles/globals.css ===
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #030712;
+  --police-blue: #003366;
+  --police-gold: #ffd700;
+  --police-green: #28a745;
+  --police-red: #dc3545;
+}
+
+body {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  background: linear-gradient(180deg, #000 0%, #030712 60%, #050b1a 100%);
+  min-height: 100vh;
+}
+
+.card {
+  @apply bg-white/5 border border-white/10 shadow-xl shadow-black/40 rounded-3xl p-6;
+}
+=== ./src/lib/questions.ts ===
+export type Question = {
+  id: number;
+  category: "English" | "General Knowledge" | "Current Affairs" | "Constitution" | "Ethics";
+  question: string;
+  options: Record<"a" | "b" | "c" | "d", string>;
+  correct: "a" | "b" | "c" | "d";
+  explanation: string;
+};
+
+/**
+ * Starter questions for offline development.
+ * Later, load these from Supabase by querying the questions table.
+ */
+export const mockQuestions: Question[] = [
+  {
+    id: 1,
+    category: "Constitution",
+    question: "Which city is the capital of Nigeria?",
+    options: {
+      a: "Lagos",
+      b: "Abuja",
+      c: "Kaduna",
+      d: "Kano",
+    },
+    correct: "b",
+    explanation: "Abuja became the capital in 1991, replacing Lagos.",
+  },
+  {
+    id: 2,
+    category: "English",
+    question: "Pick the grammatically correct sentence.",
+    options: {
+      a: "He have finished.",
+      b: "She done it yesterday.",
+      c: "They were playing.",
+      d: "I am go to school.",
+    },
+    correct: "c",
+    explanation: "'They were playing.' is the only grammatically sound sentence.",
+  },
+  {
+    id: 3,
+    category: "General Knowledge",
+    question: "Which instrument is used to measure atmospheric pressure?",
+    options: {
+      a: "Thermometer",
+      b: "Barometer",
+      c: "Anemometer",
+      d: "Hygrometer",
+    },
+    correct: "b",
+    explanation: "A barometer measures atmospheric pressure.",
+  },
+];
+=== ./src/lib/supabaseClient.ts ===
+import { createClient } from "@supabase/supabase-js";
+
+/**
+ * Supabase Client Configuration
+ * 
+ * IMPORTANT: 
+ * 1. Create a Supabase project at https://supabase.com
+ * 2. Replace the placeholders below with your actual values from .env.local
+ * 3. Never commit your real keys to Git
+ */
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    "Missing Supabase environment variables. Please check your .env.local file."
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+=== ./src/app/admin/stickers/page.tsx ===
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+
+type Sticker = {
+  id: number;
+  url: string;
+  active: boolean;
+  created_at: string;
+};
+
+/**
+ * Admin Stickers Manager
+ * - Upload WhatsApp stickers (PNG/WEBP)
+ * - View all stickers
+ * - Toggle active/inactive status
+ */
+export default function AdminStickersPage() {
+  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    loadStickers();
+  }, []);
+
+  const loadStickers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("stickers")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setStickers(data || []);
+    } catch (error) {
+      setStatus("⚠️ Error loading stickers");
+    }
+  };
+
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setStatus("📤 Uploading sticker...");
+
+    try {
+      const fileName = `${Date.now()}-${file.name}`;
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("stickers")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("stickers")
+        .getPublicUrl(fileName);
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from("stickers")
+        .insert({ url: publicUrl, active: true });
+
+      if (dbError) throw dbError;
+
+      setStatus("✅ Sticker uploaded successfully!");
+      loadStickers();
+      setTimeout(() => setStatus(""), 3000);
+    } catch (error) {
+      setStatus("❌ Upload failed. Check console.");
+      console.error(error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const toggleActive = async (id: number, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("stickers")
+        .update({ active: !currentStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+      loadStickers();
+    } catch (error) {
+      setStatus("❌ Error updating sticker");
+    }
+  };
+
+  const deleteSticker = async (id: number, url: string) => {
+    if (!confirm("Delete this sticker?")) return;
+
+    try {
+      // Extract file path from URL
+      const fileName = url.split("/").pop();
+      
+      // Delete from storage
+      if (fileName) {
+        await supabase.storage.from("stickers").remove([fileName]);
+      }
+
+      // Delete from database
+      const { error } = await supabase.from("stickers").delete().eq("id", id);
+      if (error) throw error;
+
+      setStatus("✅ Sticker deleted!");
+      loadStickers();
+      setTimeout(() => setStatus(""), 2000);
+    } catch (error) {
+      setStatus("❌ Error deleting sticker");
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-heading font-bold text-policeGold">WhatsApp Stickers</h2>
+        <p className="text-sm text-white/60">Upload funny stickers to show when recruits get answers wrong</p>
+      </div>
+
+      {/* Status */}
+      {status && (
+        <div className="card bg-white/10 border-policeGold">
+          <p className="text-center font-semibold">{status}</p>
+        </div>
+      )}
+
+      {/* Upload Section */}
+      <div className="card space-y-4">
+        <h3 className="text-lg font-heading font-bold">Upload New Sticker</h3>
+        <div>
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-policeGold transition">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <p className="mb-2 text-sm text-white/60">
+                <span className="font-semibold">Click to upload</span> or drag and drop
+              </p>
+              <p className="text-xs text-white/40">PNG, WEBP (512x512 recommended)</p>
+            </div>
+            <input
+              type="file"
+              className="hidden"
+              accept="image/png,image/webp"
+              onChange={handleUpload}
+              disabled={uploading}
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Stickers Grid */}
+      <div>
+        <h3 className="text-lg font-heading font-bold text-policeGold mb-4">
+          All Stickers ({stickers.length})
+        </h3>
+        
+        {stickers.length === 0 ? (
+          <div className="card text-center">
+            <p className="text-white/60">No stickers yet. Upload your first one above!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {stickers.map((sticker) => (
+              <div key={sticker.id} className="card space-y-3">
+                <div className="aspect-square bg-white/5 rounded-xl flex items-center justify-center overflow-hidden">
+                  <img
+                    src={sticker.url}
+                    alt="Sticker"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <button
+                    onClick={() => toggleActive(sticker.id, sticker.active)}
+                    className={`w-full py-2 rounded-lg text-xs font-semibold transition ${
+                      sticker.active
+                        ? "bg-policeGreen/20 text-policeGreen border border-policeGreen"
+                        : "bg-white/5 text-white/40 border border-white/10"
+                    }`}
+                  >
+                    {sticker.active ? "✅ Active" : "⏸ Inactive"}
+                  </button>
+                  
+                  <button
+                    onClick={() => deleteSticker(sticker.id, sticker.url)}
+                    className="w-full py-2 rounded-lg text-xs font-semibold bg-policeRed/20 text-policeRed border border-policeRed hover:brightness-110"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+=== ./src/app/admin/page.tsx ===
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+
+type Question = {
+  id?: number;
+  category: string;
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: "a" | "b" | "c" | "d";
+  explanation: string;
+};
+
+const categories = ["English", "General Knowledge", "Current Affairs", "Constitution", "Ethics"];
+
+/**
+ * Admin Questions Manager
+ * - Add new questions with answers
+ * - View all existing questions
+ * - Edit/delete questions
+ */
+export default function AdminQuestionsPage() {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [status, setStatus] = useState("");
+  
+  const [formData, setFormData] = useState<Question>({
+    category: "English",
+    question: "",
+    option_a: "",
+    option_b: "",
+    option_c: "",
+    option_d: "",
+    correct_option: "a",
+    explanation: "",
+  });
+
+  // Load questions from Supabase
+  useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  const loadQuestions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("questions")
+        .select("*")
+        .order("id", { ascending: false });
+
+      if (error) throw error;
+      setQuestions(data || []);
+    } catch (error) {
+      setStatus("⚠️ Error loading questions. Check Supabase connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("Saving question...");
+
+    try {
+      const { error } = await supabase.from("questions").insert([formData]);
+
+      if (error) throw error;
+
+      setStatus("✅ Question added successfully!");
+      setFormData({
+        category: "English",
+        question: "",
+        option_a: "",
+        option_b: "",
+        option_c: "",
+        option_d: "",
+        correct_option: "a",
+        explanation: "",
+      });
+      
+      loadQuestions();
+      setTimeout(() => setStatus(""), 3000);
+    } catch (error) {
+      setStatus("❌ Error saving question. Check console.");
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this question?")) return;
+
+    try {
+      const { error } = await supabase.from("questions").delete().eq("id", id);
+      if (error) throw error;
+      
+      setStatus("✅ Question deleted!");
+      loadQuestions();
+      setTimeout(() => setStatus(""), 2000);
+    } catch (error) {
+      setStatus("❌ Error deleting question");
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header & Add Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-heading font-bold text-policeGold">Questions Database</h2>
+          <p className="text-sm text-white/60">Total: {questions.length} questions</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-6 py-3 rounded-full bg-policeGold text-policeBlue font-semibold hover:brightness-110 transition"
+        >
+          {showForm ? "Cancel" : "+ Add New Question"}
+        </button>
+      </div>
+
+      {/* Status Messages */}
+      {status && (
+        <div className="card bg-white/10 border-policeGold">
+          <p className="text-center font-semibold">{status}</p>
+        </div>
+      )}
+
+      {/* Add Question Form */}
+      {showForm && (
+        <form onSubmit={handleSubmit} className="card space-y-4">
+          <h3 className="text-xl font-heading font-bold text-policeGold">Add New Question</h3>
+
+          {/* Category */}
+          <div>
+            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Category</label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
+              required
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Question */}
+          <div>
+            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Question</label>
+            <textarea
+              value={formData.question}
+              onChange={(e) => setFormData({ ...formData, question: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white min-h-[80px]"
+              required
+            />
+          </div>
+
+          {/* Options */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(["a", "b", "c", "d"] as const).map((option) => (
+              <div key={option}>
+                <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">
+                  Option {option.toUpperCase()}
+                </label>
+                <input
+                  type="text"
+                  value={formData[`option_${option}` as keyof Question] as string}
+                  onChange={(e) => setFormData({ ...formData, [`option_${option}`]: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
+                  required
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Correct Answer */}
+          <div>
+            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Correct Answer</label>
+            <select
+              value={formData.correct_option}
+              onChange={(e) => setFormData({ ...formData, correct_option: e.target.value as "a" | "b" | "c" | "d" })}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
+              required
+            >
+              <option value="a">A</option>
+              <option value="b">B</option>
+              <option value="c">C</option>
+              <option value="d">D</option>
+            </select>
+          </div>
+
+          {/* Explanation */}
+          <div>
+            <label className="block text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Explanation</label>
+            <textarea
+              value={formData.explanation}
+              onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white min-h-[60px]"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3 rounded-full bg-policeGold text-policeBlue font-semibold hover:brightness-110 transition"
+          >
+            Save Question
+          </button>
+        </form>
+      )}
+
+      {/* Questions List */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-heading font-bold text-policeGold">All Questions</h3>
+        
+        {loading ? (
+          <p className="text-white/60">Loading questions...</p>
+        ) : questions.length === 0 ? (
+          <div className="card text-center">
+            <p className="text-white/60">No questions yet. Add your first question above!</p>
+          </div>
+        ) : (
+          questions.map((q) => (
+            <div key={q.id} className="card space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <span className="text-xs uppercase tracking-[0.3em] text-white/60">{q.category}</span>
+                  <h4 className="text-lg font-semibold text-policeGold mt-1">{q.question}</h4>
+                </div>
+                <button
+                  onClick={() => q.id && handleDelete(q.id)}
+                  className="text-policeRed text-sm hover:brightness-110"
+                >
+                  Delete
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {(["a", "b", "c", "d"] as const).map((option) => (
+                  <div
+                    key={option}
+                    className={`px-3 py-2 rounded-lg border ${
+                      q.correct_option === option
+                        ? "border-policeGreen bg-policeGreen/10 text-policeGreen"
+                        : "border-white/10 text-white/70"
+                    }`}
+                  >
+                    <span className="font-bold">{option.toUpperCase()}:</span> {q[`option_${option}` as keyof Question]}
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-white/60 italic">💡 {q.explanation}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+=== ./src/app/admin/layout.tsx ===
+import Link from "next/link";
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen">
+      <div className="border-b border-white/10 bg-white/5 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-heading font-bold text-policeGold">Admin Dashboard</h1>
+              <p className="text-xs text-white/60">Manage questions and stickers</p>
+            </div>
+            <Link href="/" className="text-sm text-white/70 hover:text-policeGold transition">
+              ← Back to Home
+            </Link>
+          </div>
+          
+          <nav className="mt-4 flex gap-4">
+            <Link 
+              href="/admin" 
+              className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+            >
+              Questions
+            </Link>
+            <Link 
+              href="/admin/stickers" 
+              className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+            >
+              Stickers
+            </Link>
+          </nav>
+        </div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-8">
+        {children}
+      </div>
+    </div>
+  );
+}
+=== ./src/app/globals.css ===
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+=== ./src/app/leaderboard/page.tsx ===
+const leaderboard = [
+  { name: "Aminat", points: 480 },
+  { name: "Chike", points: 450 },
+  { name: "Sade", points: 430 },
+  { name: "Emeka", points: 410 },
+  { name: "Bolanle", points: 390 },
+];
+
+type RowProps = { rank: number; name: string; points: number };
+
+function Row({ rank, name, points }: RowProps) {
+  return (
+    <div className="flex items-center justify-between rounded-3xl border border-white/10 bg-white/5 px-5 py-3 text-sm">
+      <div className="flex items-center gap-3">
+        <span className="text-lg font-heading text-policeGold">{rank}.</span>
+        <div>
+          <p className="font-semibold text-white">{name}</p>
+          <p className="text-xs text-white/60">Aspiring Recruit</p>
+        </div>
+      </div>
+      <p className="font-semibold text-policeGreen">{points} pts</p>
+    </div>
+  );
+}
+
+export default function LeaderboardPage() {
+  return (
+    <div className="space-y-8 px-4 pb-10">
+      <header className="mx-auto max-w-3xl text-center">
+        <p className="text-xs uppercase tracking-[0.5em] text-white/60">Weekly leaderboard</p>
+        <h1 className="text-3xl font-heading font-bold text-policeGold">Top Recruits</h1>
+        <p className="text-white/70">Practice daily to climb the ranks and stay inspired.</p>
+      </header>
+      <section className="mx-auto max-w-3xl space-y-3">
+        {leaderboard.map((item, index) => (
+          <Row key={item.name} rank={index + 1} name={item.name} points={item.points} />
+        ))}
+      </section>
+    </div>
+  );
+}
+=== ./src/app/practice/page.tsx ===
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import QuestionCard from "@/components/QuestionCard";
+import BadgeChip from "@/components/BadgeChip";
+
+type SupaRow = {
+  id: number;
+  category: string;
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: "a" | "b" | "c" | "d";
+  explanation: string;
+};
+
+type Question = {
+  id: number;
+  category: string;
+  question: string;
+  options: Record<"a" | "b" | "c" | "d", string>;
+  correct: "a" | "b" | "c" | "d";
+  explanation: string;
+};
+
+export default function PracticePage() {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [state, setState] = useState({ index: 0, points: 0, streak: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch questions once on mount
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from<SupaRow>("questions")
+        .select("*")
+        .order("id", { ascending: true });
+
+      if (error) {
+        console.error("Supabase fetch error:", error);
+        setError("Failed to load questions. Refresh to retry.");
+      } else if (data) {
+        const mapped = data.map((q) => ({
+          id: q.id,
+          category: q.category,
+          question: q.question,
+          options: {
+            a: q.option_a,
+            b: q.option_b,
+            c: q.option_c,
+            d: q.option_d,
+          },
+          correct: q.correct_option,
+          explanation: q.explanation,
+        }));
+        setQuestions(mapped);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const handleAnswer = (correct: boolean) => {
+    setState((prev) => ({
+      index: (prev.index + 1) % questions.length,
+      points: prev.points + (correct ? 10 : 0),
+      streak: correct ? prev.streak + 1 : 0,
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-white/60">
+        Loading questions…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card bg-policeRed/10 border border-policeRed p-6 text-center">
+        <p className="text-policeRed font-semibold">{error}</p>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="card p-6 text-center text-white/60">
+        No questions found. Add some in the <strong>/admin</strong> page.
+      </div>
+    );
+  }
+
+  const q = questions[state.index];
+
+  return (
+    <div className="space-y-8 px-4 pb-10">
+      <header className="mx-auto max-w-3xl space-y-2 text-center">
+        <p className="text-xs uppercase tracking-[0.5em] text-white/50">
+          Mock Practice Arena
+        </p>
+        <h1 className="text-3xl font-heading font-bold text-policeGold">
+          Level up for screening
+        </h1>
+        <p className="text-white/70">
+          Every session resets the questions so you stay sharp. Badges, streaks,
+          and humor keep motivation high.
+        </p>
+        <div className="flex flex-wrap justify-center gap-4 pt-3">
+          <div className="rounded-2xl border border-white/10 px-6 py-3">
+            <p className="text-xs text-white/50">Points</p>
+            <p className="text-lg font-semibold">{state.points}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 px-6 py-3">
+            <p className="text-xs text-white/50">Current Streak</p>
+            <p className="text-lg font-semibold">{state.streak}</p>
+          </div>
+        </div>
+      </header>
+
+      <QuestionCard question={q} onAnswer={handleAnswer} />
+
+      <section className="mx-auto max-w-3xl space-y-2">
+        <p className="text-xs uppercase tracking-[0.5em] text-white/60">
+          Badges on the horizon
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <BadgeChip label="Rookie" earned={state.points >= 10} />
+          <BadgeChip label="Detective" earned={state.points >= 50} />
+          <BadgeChip label="Sharp Shooter" earned={state.streak >= 5} />
+          <BadgeChip label="Recruit Ready" earned={state.points >= 90} />
+        </div>
+      </section>
+    </div>
+  );
+}
+=== ./src/app/page.tsx ===
+import Link from "next/link";
+import BadgeChip from "@/components/BadgeChip";
+
+export default function HomePage() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-8 px-4 py-10 text-center">
+      <section className="card w-full max-w-4xl space-y-5 text-center">
+        <p className="text-xs uppercase tracking-[0.5em] text-white/60">Mock Screening Exam</p>
+        <h2 className="text-4xl font-heading font-bold text-policeGold">Practice with the vibe of a recruit.</h2>
+        <p className="text-white/80">
+          Daily mocks, instant feedback, badges, and funny WhatsApp stickers to keep you smiling even when you miss a question.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link 
+            href="/practice" 
+            className="rounded-full bg-policeGold px-6 py-3 font-semibold uppercase tracking-[0.4em] text-policeBlue transition hover:brightness-110"
+          >
+            Start Practice
+          </Link>
+          <Link 
+            href="/leaderboard" 
+            className="rounded-full border border-white/30 px-6 py-3 uppercase tracking-[0.4em] text-white/80"
+          >
+            Leaderboard
+          </Link>
+          <Link 
+            href="/admin" 
+            className="rounded-full border border-policeGold/50 px-6 py-3 uppercase tracking-[0.4em] text-policeGold hover:bg-policeGold/10"
+          >
+            Admin
+          </Link>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          <BadgeChip label="Rookie" earned />
+          <BadgeChip label="Detective" earned={false} />
+          <BadgeChip label="Sharp Shooter" earned={false} />
+        </div>
+      </section>
+    </div>
+  );
+}
+=== ./src/app/favicon.ico ===
+
+=== ./src/app/layout.tsx ===
+import "@/styles/globals.css";
+import type { Metadata } from "next";
+import { Inter, Poppins } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+});
+
+export const metadata: Metadata = {
+  title: "Recruit Arena — Nigeria Police Mock Exam",
+  description: "Gamified mock questions, funny stickers, and badges for Nigerian police aspirants.",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+      <body className="bg-gradient-to-b from-policeBlue via-[#030712] to-[#000] min-h-screen text-white">
+        <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-12">
+          <header className="pt-6 pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.5em] text-white/60">Nigeria Police 2025/2026</p>
+                <h1 className="text-3xl font-heading font-semibold text-policeGold">Recruit Arena</h1>
+              </div>
+              <span className="text-xs uppercase tracking-[0.4em] text-white/60">Screening Prep</span>
+            </div>
+          </header>
+          <main className="flex-1">{children}</main>
+          <footer className="mt-10 text-center text-xs uppercase tracking-[0.6em] text-white/50">
+            Built with discipline, humour, and confetti 🎉
+          </footer>
+        </div>
+      </body>
+    </html>
+  );
+}
+=== ./src/components/QuestionCard.tsx ===
+"use client";
+
+import { useState } from "react";
+import confetti from "canvas-confetti";
+import type { Question } from "@/lib/questions";
+
+type Props = {
+  question: Question;
+  onAnswer: (correct: boolean) => void;
+};
+
+/**
+ * Shows a question with options, gives instant feedback,
+ * triggers confetti on success. Sticker support is disabled until Supabase is configured.
+ */
+export default function QuestionCard({ question, onAnswer }: Props) {
+  const [selected, setSelected] = useState<"a" | "b" | "c" | "d" | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = () => {
+    if (!selected) return;
+    const correct = selected === question.correct;
+
+    if (correct) {
+      confetti({ 
+        particleCount: 80, 
+        spread: 90, 
+        colors: ["#FFD700", "#ffffff", "#28a745"] 
+      });
+    }
+
+    setSubmitted(true);
+    onAnswer(correct);
+  };
+
+  return (
+    <div className="card w-full max-w-2xl mx-auto space-y-5">
+      <div>
+        <p className="text-xs uppercase tracking-[0.5em] text-white/60">{question.category}</p>
+        <h3 className="text-2xl font-semibold font-heading text-policeGold mt-2">{question.question}</h3>
+      </div>
+
+      <div className="grid gap-3">
+        {(["a", "b", "c", "d"] as const).map((option) => {
+          const isCorrect = option === question.correct;
+          return (
+            <button
+              key={option}
+              onClick={() => !submitted && setSelected(option)}
+              className={`
+                flex flex-col rounded-2xl border px-4 py-3 text-left transition
+                ${selected === option ? "border-policeGold bg-white/10" : "border-white/10"}
+                ${submitted && isCorrect ? "bg-policeGreen/20 border-policeGreen text-policeGreen" : ""}
+                ${submitted && !isCorrect && selected === option ? "border-policeRed text-policeRed" : ""}
+              `}
+              disabled={submitted}
+            >
+              <span className="text-xs uppercase tracking-[0.4em] text-white/50">{option.toUpperCase()}</span>
+              <p className="text-lg font-medium mt-1">{question.options[option]}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {!submitted ? (
+        <button
+          onClick={handleSubmit}
+          disabled={!selected}
+          className="w-full rounded-full bg-policeGold py-3 text-center font-semibold text-policeBlue transition hover:brightness-110 disabled:opacity-40"
+        >
+          Submit Answer
+        </button>
+      ) : (
+        <div className="space-y-3">
+          {selected === question.correct ? (
+            <p className="text-policeGreen font-bold">✅ Correct! Keep that streak alive.</p>
+          ) : (
+            <>
+              <p className="text-policeRed font-bold">
+                ❌ Incorrect. The right answer is {question.options[question.correct]}.
+              </p>
+              <p className="text-xs text-white/70">{question.explanation}</p>
+              <p className="text-sm text-purple-400 mt-4">
+                💡 Connect Supabase to enable funny WhatsApp stickers when you miss questions!
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+=== ./src/components/BadgeChip.tsx ===
+"use client";
+
+type Props = {
+  label: string;
+  earned: boolean;
+};
+
+/**
+ * Tiny badge indicator for the badge grid.
+ * Shows a gold badge when earned, otherwise locked.
+ */
+export default function BadgeChip({ label, earned }: Props) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] transition 
+        ${earned 
+          ? "bg-policeGold text-black" 
+          : "bg-white/10 text-white/60"
+        }`}
+    >
+      {earned ? "🏅" : "🔒"} {label}
+    </span>
+  );
+}
+=== ./next-env.d.ts ===
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+import "./.next/dev/types/routes.d.ts";
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+=== ./.env.local ===
+NEXT_PUBLIC_SUPABASE_URL=https://ifrxmoftzfyhfyconvxa.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_L46MVFq3CN3qbKkWyoPszA_2wLpHlOD
+=== ./next.config.ts ===
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+  reactCompiler: true,
+};
+
+export default nextConfig;
+=== ./postcss.config.js ===
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+=== ./.gitignore ===
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+=== ./postcss.config.mjs ===
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+=== ./tailwind.config.js ===
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        policeBlue: "#003366",
+        policeGold: "#FFD700",
+        policeGreen: "#28a745",
+        policeRed: "#dc3545",
+      },
+      fontFamily: {
+        heading: ["var(--font-poppins)", "sans-serif"],
+      },
+    },
+  },
+  plugins: [],
+}

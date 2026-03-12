@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #030712;
+  --police-blue: #003366;
+  --police-gold: #ffd700;
+  --police-green: #28a745;
+  --police-red: #dc3545;
+}
+
+body {
+  font-family: var(--font-inter), "Inter", sans-serif;
+  background: linear-gradient(180deg, #000 0%, #030712 60%, #050b1a 100%);
+  min-height: 100vh;
+}
+
+.card {
+  @apply bg-white/5 border border-white/10 shadow-xl shadow-black/40 rounded-3xl p-6;
+}
