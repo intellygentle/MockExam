@@ -336,6 +336,10 @@ export default function AdminStudyMaterialsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <a href="/sample-study-material.csv" download
+            className="px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-sm transition bg-policeGreen/20 text-policeGreen border border-policeGreen/30 hover:bg-policeGreen/30">
+            <Download size={18} /> Template CSV
+          </a>
           <button onClick={() => { setShowImportForm(!showImportForm); setShowMaterialForm(false); }}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-sm transition ${
               showImportForm ? "bg-white/10 text-white" : "bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30"
@@ -592,7 +596,7 @@ level_number,level_title,type,front,back,question,option_a,option_b,option_c,opt
                       if (qCol < 0 || !q[qCol]) continue;
                       
                       const questionRecord: Record<string, any> = {
-                        level: 'ss3',
+                        level: 'a-level',
                         subject_id: importSubject,
                         category: subjectName,
                         year: new Date().getFullYear(),

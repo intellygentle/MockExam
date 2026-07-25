@@ -334,7 +334,7 @@ export default function AdminQuestionsPage() {
         <div className="card space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-heading font-bold text-policeGold">Bulk Upload Questions</h3>
-            <a href="/sample-upload.csv" download className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-sm text-white font-semibold hover:bg-white/20 transition">
+            <a href="/sample-questions-only.csv" download className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-sm text-white font-semibold hover:bg-white/20 transition">
               <Download size={16} /> Download Template
             </a>
           </div>

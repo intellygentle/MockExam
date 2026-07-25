@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getSupabase } from "@/lib/supabaseClient";
 import QuestionCard from "@/components/QuestionCard";
 import BadgeChip from "@/components/BadgeChip";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Zap, Crown, Flame, Trophy, Target, RefreshCw, Award, 
@@ -11,7 +12,8 @@ import {
   Layers, CalendarDays, CheckCircle, BarChart3, 
   BrainCircuit, Star, ChevronLeft, Shield,
   RotateCcw, Circle, AlertTriangle, XCircle,
-  Lightbulb, Loader2 as Spinner, Check, X, AlertCircle
+  Lightbulb, Loader2 as Spinner, Check, X, AlertCircle,
+  BookMarked, Swords
 } from "lucide-react";
 import type { OptionKey, OptionsRecord } from "@/lib/questions";
 import toast from "react-hot-toast";
@@ -79,6 +81,8 @@ export default function PracticePage() {
 
   // Practiced subjects tracking (for "New" badge)
   const [practicedSubjectIds, setPracticedSubjectIds] = useState<Set<number>>(new Set());
+
+  const router = useRouter();
 
   // Missed questions review
   const [reviewMode, setReviewMode] = useState(false);
@@ -601,14 +605,14 @@ export default function PracticePage() {
               {savedName && (
                 <div className="level-select-section pt-2 border-t border-white/10">
                   <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-3">Choose Your Level</label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <button onClick={() => handleLevelSelect("jss3")}
                       className="p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-policeGreen transition-all text-left hover:bg-policeGreen/5 group">
                       <div className="p-3 rounded-full inline-flex mb-3 bg-white/10 text-white/60 group-hover:bg-policeGreen/20 group-hover:text-policeGreen transition-colors">
                         <BookOpen size={24} />
                       </div>
                       <h3 className="text-xl font-heading font-bold text-white group-hover:text-policeGreen transition-colors">JSS3</h3>
-                      <p className="text-xs text-white/50 mt-1">Junior Secondary School</p>
+                      <p className="text-xs text-white/50 mt-1">Junior Secondary</p>
                     </button>
                     <button onClick={() => handleLevelSelect("ss3")}
                       className="p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-policeGold transition-all text-left hover:bg-policeGold/5 group">
@@ -616,7 +620,15 @@ export default function PracticePage() {
                         <GraduationCap size={24} />
                       </div>
                       <h3 className="text-xl font-heading font-bold text-white group-hover:text-policeGold transition-colors">SS3</h3>
-                      <p className="text-xs text-white/50 mt-1">Senior Secondary School</p>
+                      <p className="text-xs text-white/50 mt-1">Senior Secondary</p>
+                    </button>
+                    <button onClick={() => router.push("/study")}
+                      className="p-6 rounded-2xl border-2 border-policeGold/40 bg-policeGold/5 hover:border-policeGold transition-all text-left hover:bg-policeGold/10 group">
+                      <div className="p-3 rounded-full inline-flex mb-3 bg-policeGold/20 text-policeGold group-hover:scale-110 transition-transform">
+                        <Swords size={24} />
+                      </div>
+                      <h3 className="text-xl font-heading font-bold text-policeGold group-hover:brightness-110 transition-all">A-Level</h3>
+                      <p className="text-xs text-white/50 mt-1">Study & Practice</p>
                     </button>
                   </div>
                 </div>
