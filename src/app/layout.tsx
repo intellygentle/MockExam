@@ -1,9 +1,10 @@
 import "@/styles/globals.css";
+import "katex/dist/katex.min.css";
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import Link from "next/link";
-import { ShieldAlert } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const poppins = Poppins({
@@ -13,13 +14,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Recruit — Nigeria Police Mock Exam",
-  description: "Gamified mock questions, funny stickers, and badges for Nigerian police aspirants.",
-  icons: {
-    icon: "/image%20(9).jpg",
-    shortcut: "/image%20(9).jpg",
-    apple: "/image%20(9).jpg",
-  },
+  title: "Scholars Arena — School Mock Exam",
+  description: "Fun mock exam practice for JSS3 and SS3 students. Track your progress, earn badges, and ace your exams!",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,17 +29,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="bg-policeGold p-2 rounded-xl text-policeBlue">
-                  <ShieldAlert size={28} />
+                  <BookOpen size={28} />
                 </div>
                 <div>
-                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.5em] text-white/60">Nigeria Police 2025/2026</p>
-                  <h1 className="text-2xl sm:text-3xl font-heading font-semibold text-policeGold tracking-wide">Recruit Arena</h1>
+                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.5em] text-white/60">Practice Makes Perfect</p>
+                  <h1 className="text-2xl sm:text-3xl font-heading font-semibold text-policeGold tracking-wide">Scholars Arena</h1>
                 </div>
               </Link>
               <div className="flex gap-4 items-center">
                 <Link href="/practice" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Practice</Link>
-                <Link href="/leaderboard" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Rankings</Link>
-                {/* <Link href="/admin" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Admin</Link> */}
+                <Link href="/study" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Study</Link>
+                <Link href="/dashboard" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Progress</Link>
+                <Link href="/leaderboard" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Leaderboard</Link>
               </div>
             </div>
           </header>
@@ -51,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-1 w-full">{children}</main>
           
           <footer className="mt-16 text-center text-xs uppercase tracking-[0.6em] text-white/40">
-            Built with discipline, humour, and confetti 🎉
+            Keep learning, stay curious, and have fun! 📚✨
           </footer>
         </div>
       </body>

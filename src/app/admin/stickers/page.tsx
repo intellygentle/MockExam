@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabase } from "@/lib/supabaseClient";
 
 type Sticker = {
   id: number;
@@ -27,6 +27,7 @@ export default function AdminStickersPage() {
 
   const loadStickers = async () => {
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from("stickers")
         .select("*")
@@ -49,6 +50,8 @@ export default function AdminStickersPage() {
     try {
       const fileName = `${Date.now()}-${file.name}`;
       
+      const supabase = await getSupabase();
+
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("stickers")
@@ -81,6 +84,7 @@ export default function AdminStickersPage() {
 
   const toggleActive = async (id: number, currentStatus: boolean) => {
     try {
+      const supabase = await getSupabase();
       const { error } = await supabase
         .from("stickers")
         .update({ active: !currentStatus })
@@ -100,6 +104,8 @@ export default function AdminStickersPage() {
       // Extract file path from URL
       const fileName = url.split("/").pop();
       
+      const supabase = await getSupabase();
+
       // Delete from storage
       if (fileName) {
         await supabase.storage.from("stickers").remove([fileName]);

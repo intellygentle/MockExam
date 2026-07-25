@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* KaTeX styles are imported in layout.tsx */
+
 :root {
   --bg: #030712;
   --police-blue: #003366;

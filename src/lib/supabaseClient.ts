@@ -1,21 +1,31 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Supabase Client Configuration
- * 
- * IMPORTANT: 
- * 1. Create a Supabase project at https://supabase.com
- * 2. Replace the placeholders below with your actual values from .env.local
- * 3. Never commit your real keys to Git
+ * Supabase Client (lazy initialization)
+ *
+ * Fetches SUPABASE_URL and SUPABASE_ANON_KEY from a server API route
+ * so we don't need NEXT_PUBLIC_ environment variables.
  */
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+let client: SupabaseClient | null = null;
+let initPromise: Promise<SupabaseClient> | null = null;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing Supabase environment variables. Please check your .env.local file."
-  );
+export async function getSupabase(): Promise<SupabaseClient> {
+  if (client) return client;
+
+  if (!initPromise) {
+    initPromise = (async () => {
+      const res = await fetch("/api/supabase-config");
+      if (!res.ok) {
+        throw new Error(
+          "Failed to load Supabase configuration. Make sure SUPABASE_URL and SUPABASE_ANON_KEY are set in your .env.local file."
+        );
+      }
+      const config = await res.json();
+      client = createClient(config.url, config.anonKey);
+      return client;
+    })();
+  }
+
+  return initPromise;
 }
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);

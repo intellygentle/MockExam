@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </div>
           </div>
 
-          <nav className="mt-4 flex gap-4">
+          <nav className="mt-4 flex flex-wrap gap-2 sm:gap-4">
             <Link
               href={`/${secretPath}`}
               className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
@@ -37,10 +37,28 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               Questions
             </Link>
             <Link
+              href={`/${secretPath}/departments`}
+              className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+            >
+              Departments
+            </Link>
+            <Link
+              href={`/${secretPath}/subjects`}
+              className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+            >
+              Subjects
+            </Link>
+            <Link
               href={`/${secretPath}/stickers`}
               className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
             >
               Stickers
+            </Link>
+            <Link
+              href={`/${secretPath}/study-materials`}
+              className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+            >
+              Study Materials
             </Link>
           </nav>
         </div>

@@ -1,0 +1,7 @@
+level,subject,year,question,option_a,option_b,option_c,option_d,correct_option,explanation,passage,option_e
+jss3,Mathematics,2024,What is 2 + 2?,3,4,5,6,b,2 + 2 equals 4.,,
+jss3,English Language,2024,"Choose the correct spelling:","Accomodate","Acommodate","Accommodate","Acomodate",c,"The correct spelling is 'Accommodate' with double c and double m.",,
+ss3,Physics,2024,What is the SI unit of force?,Newton,Joule,Watt,Pascal,a,The SI unit of force is the Newton (N).,,
+ss3,Economics,2024,What is the law of demand?,Price up = demand up,"Price up = demand down","Price constant = demand up",None of the above,b,Price and demand have an inverse relationship.,,
+jss3,English Language,2023,"What does the narrator's brother do for a living?","Doctor","Teacher","Pilot","Engineer",c,"The passage states 'my brother is a pilot'.","When I was a child my family traveled often. My brother is a pilot and he would take us to different cities during holidays. Those trips were the best memories of my childhood.",
+jss3,General Science,2023,Which of these is NOT a state of matter?,Solid,Liquid,Gas,Plasma,d,"Solid, liquid, gas, and plasma are all states of matter.",,Energy
