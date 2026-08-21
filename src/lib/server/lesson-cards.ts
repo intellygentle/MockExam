@@ -54,7 +54,7 @@ export type LessonQuestion = {
   rubric?: CombineRubric;
 };
 
-export type CardKind = "capitalize" | "classify" | "combine";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false";
 
 export type LessonCardDef = {
   slug: string;
@@ -171,6 +171,11 @@ export function gradeQuestionWithHints(
     const correct = normalizeClassification(studentText) === normalizeClassification(question.answer);
     return { correct, hints: correct ? [] : question.hints };
   }
+  if (card.kind === "true_false") {
+    const normalizeTF = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const correct = normalizeTF(studentText) === normalizeTF(question.answer);
+    return { correct, hints: correct ? [] : question.hints };
+  }
   // combine — rubric grading with per-rule hints
   return gradeCombine(studentText, question);
 }
@@ -194,7 +199,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -761,6 +766,156 @@ const CARDS: Record<string, LessonCardDef> = {
           hintConnector:
             "Good sentence count, but it reads like a run-on. Join your clauses properly with a FANBOYS word and a comma (, and / , but / , so), a subordinating conjunction (because / although / when), or a semicolon (;).",
         },
+      },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // True or False (true_false kind) — chip-selection cards.
+  // Students judge each statement as True or False; the answers live
+  // ONLY in this server module and are checked on submit.
+  // ════════════════════════════════════════════════════════════════
+  "true-false-science-facts": {
+    slug: "true-false-science-facts",
+    title: "True or False: Science Facts",
+    description:
+      "Learn how to spot the traps hidden in true/false questions, then judge every science statement until you get them all right.",
+    kind: "true_false",
+    lesson: [
+      {
+        kind: "heading",
+        text: "📝 True or False Lesson Note",
+      },
+      {
+        kind: "text",
+        text: "True or false questions look easy — but they hide sneaky traps. Learn how to read each statement like a scientist, then judge every practice statement until you get them all right!",
+      },
+      {
+        kind: "heading",
+        text: "🧭 Read the Whole Statement First",
+      },
+      {
+        kind: "text",
+        text: "Never decide before you finish reading. A statement can start true and end false (or the other way round). Read the full sentence, then test it against what you know.",
+      },
+      {
+        kind: "bullets",
+        items: [
+          "Break it into parts — check every fact separately. One wrong part makes the whole statement false.",
+          "Ask: “Is this ALWAYS true?” — a statement is only true if it is true every single time.",
+        ],
+      },
+      {
+        kind: "heading",
+        text: "🚨 Watch Out for the Absolute Words",
+      },
+      {
+        kind: "text",
+        text: "Be suspicious of words that allow no exceptions. Statements with words like always, never, every, all, only and no are usually FALSE — because science is full of exceptions.",
+      },
+      {
+        kind: "examples",
+        title: "Absolute-word traps",
+        items: [
+          "All metals are magnetic. (False — copper and gold are metals, but they are not magnetic.)",
+          "Fish never breathe air. (False — some fish can gulp air from the surface!)",
+        ],
+      },
+      {
+        kind: "heading",
+        text: "🔍 Check the Little Words",
+      },
+      {
+        kind: "text",
+        text: "Words like “some”, “most”, “usually” and “can” make a statement easier to be true. Words like “always” and “never” make it almost impossible. Read carefully and you'll catch the trick every time.",
+      },
+      {
+        kind: "table",
+        headers: ["Word", "What it does", "Verdict"],
+        rows: [
+          ["Always / Never / Every / All", "Allows no exceptions", "Almost always False"],
+          ["Some / Most / Usually", "Allows exceptions", "Often True"],
+          ["Can / May / Sometimes", "Only says it's possible", "Usually True"],
+        ],
+      },
+      {
+        kind: "review",
+        title: "The three rules to remember:",
+        items: [
+          "Read the whole statement before deciding.",
+          "A statement is only true if it is true every single time.",
+          "Beware absolute words: always, never, every, all.",
+        ],
+      },
+      {
+        kind: "heading",
+        text: "🚀 Ready to Practice?",
+      },
+      {
+        kind: "text",
+        text: "Read each statement on the right, then choose True or False. All statements must be right to master the lesson — you'll get a hint for anything you miss, and you can try again!",
+      },
+    ],
+    questions: [
+      {
+        prompt: "Water boils at 100°C at sea level.",
+        answer: "True",
+        hints: ["At normal atmospheric pressure (sea level), water boils at exactly 100°C."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "The sun is a planet.",
+        answer: "False",
+        hints: ["The sun is a star — a giant ball of hot glowing gas at the centre of our solar system."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "Mammals breathe with gills.",
+        answer: "False",
+        hints: ["Fish breathe with gills. Mammals — including humans — breathe with lungs."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "The Earth revolves around the Sun.",
+        answer: "True",
+        hints: ["The Earth orbits the Sun once every year — that's what a revolution is."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "Oxygen is needed for burning to take place.",
+        answer: "True",
+        hints: ["Combustion (burning) needs three things: fuel, heat and oxygen. Remove the oxygen and the fire goes out."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "All metals are magnetic.",
+        answer: "False",
+        hints: ["Only some metals — like iron, nickel and cobalt — are magnetic. Copper, gold and aluminium are metals that are not magnetic."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "Photosynthesis takes place mainly in the leaves of plants.",
+        answer: "True",
+        hints: ["Leaves contain chlorophyll, the green pigment that traps sunlight for photosynthesis."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "Sound travels faster than light.",
+        answer: "False",
+        hints: ["Light travels much faster than sound — that's why you see lightning before you hear the thunder."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "The human heart has four chambers.",
+        answer: "True",
+        hints: ["The heart has two upper chambers (atria) and two lower chambers (ventricles)."],
+        source: "Practice Statements",
+      },
+      {
+        prompt: "Friction is always a disadvantage and is never useful.",
+        answer: "False",
+        hints: ["Absolute words (“always”, “never”) usually signal a false statement. Friction also helps us walk, grip and brake."],
+        source: "Practice Statements",
       },
     ],
   },

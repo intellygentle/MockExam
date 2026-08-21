@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         return { error: NextResponse.json({ error: "Drill set not found" }, { status: 404 }) };
       }
       const cardType = set.card_type || "quiz";
-      if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining") {
+      if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false") {
         return { error: NextResponse.json({ error: "This drill set is not a lesson card" }, { status: 400 }) };
       }
       const card = getLessonCard(cardType, set.capitalization_slug);

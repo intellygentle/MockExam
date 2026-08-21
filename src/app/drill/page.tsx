@@ -324,7 +324,8 @@ export default function DrillPage() {
   const isLessonCard = (set: DrillSet) =>
     set.card_type === "capitalization" ||
     set.card_type === "sentence_types" ||
-    set.card_type === "sentence_combining";
+    set.card_type === "sentence_combining" ||
+    set.card_type === "true_false";
 
   const lessonBadge = (set: DrillSet) => {
     if (set.card_type === "capitalization") {
@@ -335,6 +336,9 @@ export default function DrillPage() {
     }
     if (set.card_type === "sentence_combining") {
       return { label: "🔗 Sentence Combining", classes: "bg-sky-500/15 text-sky-300" };
+    }
+    if (set.card_type === "true_false") {
+      return { label: "⚖️ True or False", classes: "bg-emerald-500/15 text-emerald-300" };
     }
     return null;
   };
@@ -418,7 +422,9 @@ export default function DrillPage() {
                           ? "bg-gradient-to-br from-teal-500/20 to-cyan-500/20 text-teal-300"
                           : set.card_type === "sentence_combining"
                             ? "bg-gradient-to-br from-sky-500/20 to-blue-500/20 text-sky-300"
-                            : "bg-gradient-to-br from-orange-500/20 to-policeRed/20 text-orange-400"
+                            : set.card_type === "true_false"
+                              ? "bg-gradient-to-br from-emerald-500/20 to-green-500/20 text-emerald-300"
+                              : "bg-gradient-to-br from-orange-500/20 to-policeRed/20 text-orange-400"
                     }`}>
                       {set.title[0]}
                     </div>
@@ -441,7 +447,7 @@ export default function DrillPage() {
                   <div className="bg-white/5 rounded-lg p-2 text-center">
                     <BrainCircuit size={14} className="text-blue-400 mx-auto mb-0.5" />
                     <p className="text-sm font-bold text-white">{set.question_count}</p>
-                    <p className="text-[8px] uppercase tracking-widest text-white/40">{isLessonCard(set) ? "Sentences" : "Questions"}</p>
+                    <p className="text-[8px] uppercase tracking-widest text-white/40">{isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : "Sentences") : "Questions"}</p>
                   </div>
                   <div className="bg-white/5 rounded-lg p-2 text-center">
                     <Clock size={14} className="text-policeGold mx-auto mb-0.5" />

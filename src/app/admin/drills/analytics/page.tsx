@@ -6,7 +6,7 @@ import {
   Loader2, ChevronRight, ArrowLeft, Trophy,
   Flame, Timer, AlertTriangle, CheckCircle2,
   Zap, ChevronDown, ChevronUp, Repeat, BadgeCheck, PenLine,
-  Braces, Merge
+  Braces, Merge, Scale
 } from "lucide-react";
 
 type DrillSetSummary = {
@@ -202,6 +202,8 @@ export default function AdminDrillAnalyticsPage() {
                             ? "bg-teal-500/20 text-teal-300"
                             : set.card_type === "sentence_combining"
                               ? "bg-sky-500/20 text-sky-300"
+                            : set.card_type === "true_false"
+                              ? "bg-emerald-500/20 text-emerald-300"
                               : "bg-orange-500/20 text-orange-400"
                       }`}>
                         {set.title[0]}
@@ -209,7 +211,7 @@ export default function AdminDrillAnalyticsPage() {
                       <div className="min-w-0">
                         <h4 className="font-semibold text-white group-hover:text-blue-400 transition-colors truncate">{set.title}</h4>
                         <p className="text-xs text-white/40">
-                          {set.question_count} {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" ? "chunks" : "questions"} • {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" ? "self-paced" : `${set.time_limit_minutes}m limit`} • {set.level.toUpperCase()}
+                          {set.question_count} {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" || set.card_type === "true_false" ? "items" : "questions"} • {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" || set.card_type === "true_false" ? "self-paced" : `${set.time_limit_minutes}m limit`} • {set.level.toUpperCase()}
                           {set.card_type === "capitalization" && (
                             <span className="ml-2 text-[9px] uppercase tracking-widest bg-violet-500/15 text-violet-300 px-2 py-0.5 rounded-full font-bold">✍️ Capitalization</span>
                           )}
@@ -218,6 +220,9 @@ export default function AdminDrillAnalyticsPage() {
                           )}
                           {set.card_type === "sentence_combining" && (
                             <span className="ml-2 text-[9px] uppercase tracking-widest bg-sky-500/15 text-sky-300 px-2 py-0.5 rounded-full font-bold">🔗 Sentence Combining</span>
+                          )}
+                          {set.card_type === "true_false" && (
+                            <span className="ml-2 text-[9px] uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full font-bold">⚖️ True or False</span>
                           )}
                         </p>
                         {set.masteredStudents > 0 && (
@@ -286,20 +291,24 @@ export default function AdminDrillAnalyticsPage() {
                     ? "bg-teal-500/20 text-teal-300"
                     : drillSet.cardType === "sentence_combining"
                       ? "bg-sky-500/20 text-sky-300"
+                    : drillSet.cardType === "true_false"
+                      ? "bg-emerald-500/20 text-emerald-300"
                       : "bg-orange-500/20 text-orange-400"
               }`}>
-                {drillSet.cardType === "capitalization" ? <PenLine size={28} /> : drillSet.cardType === "sentence_types" ? <Braces size={28} /> : drillSet.cardType === "sentence_combining" ? <Merge size={28} /> : <Flame size={28} />}
+                {drillSet.cardType === "capitalization" ? <PenLine size={28} /> : drillSet.cardType === "sentence_types" ? <Braces size={28} /> : drillSet.cardType === "sentence_combining" ? <Merge size={28} /> : drillSet.cardType === "true_false" ? <Scale size={28} /> : <Flame size={28} />}
               </div>
               <div>
                 <h2 className="text-2xl font-heading font-bold text-white">{drillSet.title}</h2>
                 <p className="text-sm text-white/50">
-                  {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining"
-                    ? `${drillSet.question_count} chunks • self-paced ${
+                  {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
+                    ? `${drillSet.question_count} items • self-paced ${
                         drillSet.cardType === "sentence_combining"
                           ? "sentence combining"
                           : drillSet.cardType === "sentence_types"
                             ? "sentence classification"
-                            : "capitalization"
+                            : drillSet.cardType === "true_false"
+                              ? "true or false"
+                              : "capitalization"
                       } practice`
                     : `${drillSet.question_count} questions • ${drillSet.time_limit_minutes}m target`}
                 </p>
@@ -334,7 +343,7 @@ export default function AdminDrillAnalyticsPage() {
               <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Avg Score</p>
               <p className={`text-3xl font-bold ${getScoreColor(analytics.summary.avgScorePercent)}`}>{analytics.summary.avgScorePercent}%</p>
             </div>
-            {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" ? (
+            {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false" ? (
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
                 <Repeat size={24} className="text-violet-300 mx-auto mb-2" />
                 <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Avg Submissions</p>
@@ -401,7 +410,7 @@ export default function AdminDrillAnalyticsPage() {
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-white truncate">{student.studentName}</p>
                             <p className="text-[10px] text-white/40">
-                              {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining"
+                              {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
                                 ? `${student.attempts} ${student.attempts === 1 ? "session" : "sessions"} • ${student.completed} perfected • ${student.submissions ?? 0} total submissions`
                                 : `${student.attempts} ${student.attempts === 1 ? "try" : "tries"} in succession • ${student.completed} completed`}
                             </p>
@@ -417,7 +426,7 @@ export default function AdminDrillAnalyticsPage() {
                           <div className="hidden md:block">
                             {student.mastered ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-policeGreen bg-policeGreen/10 px-2 py-1 rounded-full border border-policeGreen/20">
-                                <BadgeCheck size={11} /> {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" ? `Perfected · session ${student.masteredAtTry}` : `Mastered · try ${student.masteredAtTry}`}
+                                <BadgeCheck size={11} /> {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false" ? `Perfected · session ${student.masteredAtTry}` : `Mastered · try ${student.masteredAtTry}`}
                               </span>
                             ) : (
                               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full border ${
@@ -440,11 +449,11 @@ export default function AdminDrillAnalyticsPage() {
                         <div className="px-4 pb-4 pt-1 border-t border-white/10">
                           <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2 mt-3">
                             {student.mastered
-                              ? (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining"
+                              ? (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
                                   ? `Retried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before perfecting the lesson on session ${student.masteredAtTry}`
                                   : `Retried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before mastering on try ${student.masteredAtTry}`)
-                              : (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining"
-                                  ? `Submitted ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never got every sentence correct`
+                              : (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
+                                  ? `Submitted ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never got every item correct`
                                   : `Tried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never answered all questions correctly`)}
                           </p>
                           <div className="space-y-1.5">
@@ -466,7 +475,7 @@ export default function AdminDrillAnalyticsPage() {
                                 </span>
                                 <span className="text-white/40 hidden sm:block">
                                   {t.completed
-                                    ? (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" ? (t.mastered ? "🏆 PERFECTED" : "Completed") : (t.mastered ? "🏆 MASTERED" : "Completed"))
+                                    ? (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false" ? (t.mastered ? "🏆 PERFECTED" : "Completed") : (t.mastered ? "🏆 MASTERED" : "Completed"))
                                     : "Quit mid-try"}
                                 </span>
                                 {t.submissions !== undefined && (

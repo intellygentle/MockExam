@@ -6,7 +6,7 @@ import confetti from "canvas-confetti";
 import {
   ArrowLeft, Lightbulb, Loader2, CheckCircle2, XCircle,
   Trophy, Send, ShieldCheck, BookOpen, PencilLine, RotateCcw,
-  BadgeCheck, Sparkles, Braces, Merge
+  BadgeCheck, Sparkles, Braces, Merge, Scale
 } from "lucide-react";
 
 type LessonBlock = {
@@ -19,10 +19,13 @@ type LessonBlock = {
 };
 
 type LineResult = { index: number; correct: boolean; hints: string[] };
-type CardKind = "capitalize" | "classify" | "combine";
+type CardKind = "capitalize" | "classify" | "combine" | "true_false";
 
 /** Options shown for classify cards (sentence types). */
 const CLASSIFY_OPTIONS = ["Simple", "Compound", "Complex", "Compound-Complex"];
+
+/** Options shown for true/false cards. */
+const TRUE_FALSE_OPTIONS = ["True", "False"];
 
 type Props = {
   set: { id: number; title: string; description: string; level: string };
@@ -61,6 +64,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
   const correctCount = results.filter((r) => r?.correct).length;
   const isClassify = kind === "classify";
   const isCombine = kind === "combine";
+  const isTrueFalse = kind === "true_false";
 
   // ── Load card (lesson + prompts). Answers never leave the server. ──
   useEffect(() => {
@@ -75,7 +79,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
         }
         const data = await res.json();
         if (cancelled) return;
-        setKind(data.kind === "classify" ? "classify" : data.kind === "combine" ? "combine" : "capitalize");
+        setKind(data.kind === "true_false" ? "true_false" : data.kind === "classify" ? "classify" : data.kind === "combine" ? "combine" : "capitalize");
         setTitle(data.title || set.title);
         setDescription(data.description || set.description);
         setLesson(data.lesson || []);
@@ -128,7 +132,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
               nextResults[r.index] = r;
               if (r.correct) nextLocked[r.index] = true;
               if (typeof r.answer === "string" && r.answer.length > 0) {
-                if (data.kind === "classify") {
+                if (data.kind === "classify" || data.kind === "true_false") {
                   nextSelections[r.index] = r.answer;
                 } else {
                   nextEdits[r.index] = r.answer;
@@ -169,10 +173,14 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
   // ── Submit all answers for server-side checking ──
   const handleSubmit = async () => {
     if (submitting || mastered) return;
-    const payload = isClassify ? selections : edits;
-    // A classify card requires every sentence to have a chosen type
-    if (isClassify && payload.some((a) => !a || !a.trim())) {
-      setError("Please select a sentence type for every sentence before submitting.");
+    const payload = isClassify || isTrueFalse ? selections : edits;
+    // A classify/true-false card requires every sentence/statement to have a chosen answer
+    if ((isClassify || isTrueFalse) && payload.some((a) => !a || !a.trim())) {
+      setError(
+        isTrueFalse
+          ? "Please answer every statement (True or False) before submitting."
+          : "Please select a sentence type for every sentence before submitting."
+      );
       return;
     }
     setSubmitting(true);
@@ -291,9 +299,9 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
           </button>
           <div className="flex items-center gap-2 min-w-0">
             <span className={`hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0 ${
-              isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : "bg-violet-500/15 text-violet-300"
+              isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : "bg-violet-500/15 text-violet-300"
             }`}>
-              {isCombine ? <Merge size={11} /> : isClassify ? <Braces size={11} /> : <PencilLine size={11} />} {isCombine ? "Sentence Combining" : isClassify ? "Sentence Types" : "Capitalization"}
+              {isCombine ? <Merge size={11} /> : isClassify ? <Braces size={11} /> : isTrueFalse ? <Scale size={11} /> : <PencilLine size={11} />} {isCombine ? "Sentence Combining" : isClassify ? "Sentence Types" : isTrueFalse ? "True or False" : "Capitalization"}
             </span>
             <span className="text-xs sm:text-sm font-bold text-white truncate">{title}</span>
           </div>
@@ -332,7 +340,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
         {/* ── LEFT: LESSON NOTE ── */}
         <div className="card space-y-5 lg:sticky lg:top-24">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : "bg-violet-500/15 text-violet-300"}`}>
+            <div className={`p-2.5 rounded-xl ${isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : "bg-violet-500/15 text-violet-300"}`}>
               <BookOpen size={22} />
             </div>
             <div>
@@ -468,7 +476,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                 </motion.div>
                 <div>
                   <h2 className="text-3xl font-heading font-bold text-white">🏆 Lesson Perfected!</h2>
-                  <p className="text-white/60 mt-1.5">All {totalLines} {isCombine ? "passage chunks rewritten" : isClassify ? "sentences classified" : "sentences correctly capitalized"}.</p>
+                  <p className="text-white/60 mt-1.5">All {totalLines} {isCombine ? "passage chunks rewritten" : isClassify ? "sentences classified" : isTrueFalse ? "statements answered correctly" : "sentences correctly capitalized"}.</p>
                 </div>
 
                 <div className="bg-policeGreen/10 border border-policeGreen/25 rounded-2xl p-5 text-left space-y-3">
@@ -511,28 +519,30 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
             <motion.div key="practice" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
               className="card space-y-5">
               <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl ${isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : "bg-policeGold/15 text-policeGold"}`}>
-                  {isCombine ? <Merge size={22} /> : isClassify ? <Braces size={22} /> : <PencilLine size={22} />}
+                <div className={`p-2.5 rounded-xl ${isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : "bg-policeGold/15 text-policeGold"}`}>
+                  {isCombine ? <Merge size={22} /> : isClassify ? <Braces size={22} /> : isTrueFalse ? <Scale size={22} /> : <PencilLine size={22} />}
                 </div>
                 <div>
                   <h2 className="text-xl font-heading font-bold text-white leading-tight">
-                    {isCombine ? "Rewrite the Passage Chunks" : isClassify ? "Classify the Sentences" : "Rewrite the Sentences"}
+                    {isCombine ? "Rewrite the Passage Chunks" : isClassify ? "Classify the Sentences" : isTrueFalse ? "Judge the Statements" : "Rewrite the Sentences"}
                   </h2>
                   <p className="text-[10px] uppercase tracking-widest text-white/40">
-                    {isCombine ? "Combine the choppy sentences" : isClassify ? "Pick the correct sentence type" : "Add the correct capitals"}
+                    {isCombine ? "Combine the choppy sentences" : isClassify ? "Pick the correct sentence type" : isTrueFalse ? "Pick True or False" : "Add the correct capitals"}
                   </p>
                 </div>
               </div>
 
               <div className={`border rounded-xl p-3.5 flex items-start gap-2.5 ${
-                isCombine ? "bg-sky-500/10 border-sky-500/25" : isClassify ? "bg-teal-500/10 border-teal-500/25" : "bg-violet-500/10 border-violet-500/25"
+                isCombine ? "bg-sky-500/10 border-sky-500/25" : isClassify ? "bg-teal-500/10 border-teal-500/25" : isTrueFalse ? "bg-emerald-500/10 border-emerald-500/25" : "bg-violet-500/10 border-violet-500/25"
               }`}>
-                <Lightbulb size={16} className={`${isCombine ? "text-sky-300" : isClassify ? "text-teal-300" : "text-violet-300"} shrink-0 mt-0.5`} />
+                <Lightbulb size={16} className={`${isCombine ? "text-sky-300" : isClassify ? "text-teal-300" : isTrueFalse ? "text-emerald-300" : "text-violet-300"} shrink-0 mt-0.5`} />
                 <p className="text-xs text-white/70 leading-relaxed">
                   {isCombine ? (
                     <>Rewrite each chunk below, combining the choppy simple sentences into <span className="text-sky-300 font-semibold">fewer, more sophisticated sentences</span>. Keep every key fact, and join clauses with a FANBOYS word, a subordinating conjunction, or a semicolon. All {totalLines} chunks must be perfected to master the lesson.</>
                   ) : isClassify ? (
                     <>Read each sentence, count its clauses, then choose the correct type: <span className="text-teal-300 font-semibold">Simple · Compound · Complex · Compound-Complex</span>. All {totalLines} must be right to master the lesson.</>
+                  ) : isTrueFalse ? (
+                    <>Read each statement carefully, then decide if it is <span className="text-emerald-300 font-semibold">True or False</span>. Watch out for absolute words like <span className="text-emerald-300 font-semibold">always, never, every, all</span> — they usually make a statement false. All {totalLines} must be right to master the lesson.</>
                   ) : (
                     <>Fix the <span className="text-violet-300 font-semibold">capitalization only</span> — don't change any words,
                     spellings or punctuation. All {totalLines} sentences must be perfect to master the lesson.</>
@@ -548,7 +558,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                       <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-teal-300/80 bg-teal-500/10 border border-teal-500/20 px-2 py-1 rounded-full">
                         {section.label}
                       </span>
-                      <span className="text-[9px] text-white/30">{section.indices.length} {isCombine ? (section.indices.length === 1 ? "chunk" : "chunks") : (section.indices.length === 1 ? "sentence" : "sentences")}</span>
+                      <span className="text-[9px] text-white/30">{section.indices.length} {isCombine ? (section.indices.length === 1 ? "chunk" : "chunks") : isTrueFalse ? (section.indices.length === 1 ? "statement" : "statements") : (section.indices.length === 1 ? "sentence" : "sentences")}</span>
                       <div className="flex-1 h-px bg-white/10" />
                     </div>
 
@@ -576,7 +586,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                                 {i + 1}
                               </span>
                               <span className="text-[9px] uppercase tracking-widest text-white/40 flex-1">
-                                {isCombine ? "Chunk" : "Sentence"} {i + 1}
+                                {isCombine ? "Chunk" : isTrueFalse ? "Statement" : "Sentence"} {i + 1}
                               </span>
                               {isCorrect ? (
                                 <span className="text-[9px] font-bold text-policeGreen bg-policeGreen/10 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -587,7 +597,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                                   <XCircle size={10} /> Needs work
                                 </span>
                               ) : (
-                                <span className="text-[9px] text-white/30">{isClassify ? "Select a type" : isCombine ? "Rewrite & submit" : "Edit & submit"}</span>
+                                <span className="text-[9px] text-white/30">{isClassify ? "Select a type" : isTrueFalse ? "Pick True or False" : isCombine ? "Rewrite & submit" : "Edit & submit"}</span>
                               )}
                             </div>
 
@@ -608,9 +618,9 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
 
                             {/* Answer input */}
                             <div className="px-2.5 pb-2.5 pt-1">
-                              {isClassify ? (
+                              {isClassify || isTrueFalse ? (
                                 <div className={`flex flex-wrap gap-1.5 ${isLocked ? "pointer-events-none opacity-70" : ""}`}>
-                                  {CLASSIFY_OPTIONS.map((opt) => {
+                                  {(isClassify ? CLASSIFY_OPTIONS : TRUE_FALSE_OPTIONS).map((opt) => {
                                     const selected = selections[i] === opt;
                                     return (
                                       <button key={opt} type="button" onClick={() => updateSelection(i, opt)}
@@ -647,7 +657,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                                 className="bg-amber-500/10 border border-amber-500/25 rounded-xl px-3.5 py-2.5 overflow-hidden">
                                 <p className="text-[10px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5 mb-1">
-                                  <Lightbulb size={11} /> Hint for sentence {i + 1}
+                                  <Lightbulb size={11} /> Hint for {isTrueFalse ? "statement" : isCombine ? "chunk" : "sentence"} {i + 1}
                                 </p>
                                 <ul className="space-y-1">
                                   {(result.hints || []).map((hint, j) => (
@@ -669,7 +679,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
               {/* Progress */}
               <div className="flex items-center justify-between text-xs">
                 <span className="uppercase tracking-widest text-white/40 text-[10px]">Mastery Progress</span>
-                <span className="text-white/70 font-semibold">{correctCount}/{totalLines} {isCombine ? "chunks perfect" : isClassify ? "classified" : "sentences correct"}</span>
+                <span className="text-white/70 font-semibold">{correctCount}/{totalLines} {isCombine ? "chunks perfect" : isClassify ? "classified" : isTrueFalse ? "statements correct" : "sentences correct"}</span>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <motion.div
@@ -682,7 +692,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
 
               {correctCount > 0 && correctCount < totalLines && (
                 <p className="text-[11px] text-white/40 -mt-1">
-                  ✓ Correct {isClassify ? "sentences are locked" : isCombine ? "chunks are locked" : "lines are locked"} — fix the remaining {totalLines - correctCount} to perfect the lesson.
+                  ✓ Correct {isClassify ? "sentences are locked" : isTrueFalse ? "statements are locked" : isCombine ? "chunks are locked" : "lines are locked"} — fix the remaining {totalLines - correctCount} to perfect the lesson.
                 </p>
               )}
 

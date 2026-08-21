@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import {
   PlusCircle, Trash2, Upload, Download, Loader2, Edit3, Save, X,
   Clock, Zap, Flame, BookOpen, FileText, ChevronDown, ChevronUp, PenLine,
-  Braces, Merge
+  Braces, Merge, Scale
 } from "lucide-react";
 
 type Subject = { id: number; name: string; department_id: number | null; level: string };
@@ -46,7 +46,7 @@ export default function AdminDrillsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
-  const [cardType, setCardType] = useState<"quiz" | "capitalization" | "sentence_types" | "sentence_combining">("quiz");
+  const [cardType, setCardType] = useState<"quiz" | "capitalization" | "sentence_types" | "sentence_combining" | "true_false">("quiz");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subjectName, setSubjectName] = useState("");
@@ -55,6 +55,7 @@ export default function AdminDrillsPage() {
   const [capitalizationSlug, setCapitalizationSlug] = useState("capitalization-basics");
   const [sentenceTypesSlug, setSentenceTypesSlug] = useState("sentence-types-basics");
   const [combiningSlug, setCombiningSlug] = useState("hamilton-sentence-combining");
+  const [trueFalseSlug, setTrueFalseSlug] = useState("true-false-science-facts");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [expandedSet, setExpandedSet] = useState<number | null>(null);
 
@@ -95,6 +96,7 @@ export default function AdminDrillsPage() {
     setCapitalizationSlug("capitalization-basics");
     setSentenceTypesSlug("sentence-types-basics");
     setCombiningSlug("hamilton-sentence-combining");
+    setTrueFalseSlug("true-false-science-facts");
     setCsvFile(null);
     setShowForm(false);
   };
@@ -219,6 +221,7 @@ export default function AdminDrillsPage() {
     const slug = (
       cardType === "sentence_types" ? sentenceTypesSlug
       : cardType === "sentence_combining" ? combiningSlug
+      : cardType === "true_false" ? trueFalseSlug
       : capitalizationSlug
     ).trim();
     if (!slug) { toast.error("A lesson slug is required."); return; }
@@ -233,7 +236,7 @@ export default function AdminDrillsPage() {
           subject_id: null,
           level,
           time_limit_minutes: timeLimit,
-          question_count: cardType === "sentence_types" ? 19 : 5,
+          question_count: cardType === "sentence_types" ? 19 : cardType === "true_false" ? 10 : 5,
           card_type: cardType,
           lesson_content: "",
           capitalization_slug: slug,
@@ -338,9 +341,9 @@ export default function AdminDrillsPage() {
       {showForm && (
         <div className="card space-y-5 border-orange-500/30 bg-gradient-to-br from-orange-500/5 to-policeRed/5">
           <div className="flex items-center gap-3 pb-2 border-b border-white/10">
-            {cardType === "capitalization" ? <PenLine size={22} className="text-violet-400" /> : cardType === "sentence_types" ? <Braces size={22} className="text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={22} className="text-sky-400" /> : <Zap size={22} className="text-orange-400" />}
+            {cardType === "capitalization" ? <PenLine size={22} className="text-violet-400" /> : cardType === "sentence_types" ? <Braces size={22} className="text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={22} className="text-sky-400" /> : cardType === "true_false" ? <Scale size={22} className="text-emerald-400" /> : <Zap size={22} className="text-orange-400" />}
             <h3 className="text-lg font-heading font-bold text-orange-400">
-              {cardType === "capitalization" ? "Create Capitalization Lesson Card" : cardType === "sentence_types" ? "Create Sentence Types Lesson Card" : cardType === "sentence_combining" ? "Create Sentence Combining Lesson Card" : "Create Timed Drill Set"}
+              {cardType === "capitalization" ? "Create Capitalization Lesson Card" : cardType === "sentence_types" ? "Create Sentence Types Lesson Card" : cardType === "sentence_combining" ? "Create Sentence Combining Lesson Card" : cardType === "true_false" ? "Create True or False Lesson Card" : "Create Timed Drill Set"}
             </h3>
           </div>
 
@@ -379,6 +382,14 @@ export default function AdminDrillsPage() {
                 }`}>
                 🔗 Sentence Combining
               </button>
+              <button type="button" onClick={() => setCardType("true_false")}
+                className={`rounded-xl px-4 py-3 text-sm font-bold border transition ${
+                  cardType === "true_false"
+                    ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
+                    : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
+                }`}>
+                ⚖️ True or False
+              </button>
             </div>
           </div>
 
@@ -392,7 +403,7 @@ export default function AdminDrillsPage() {
             {cardType !== "quiz" ? (
               <div>
                 <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">
-                  {cardType === "capitalization" ? <PenLine size={12} className="inline mr-1 text-violet-400" /> : cardType === "sentence_types" ? <Braces size={12} className="inline mr-1 text-teal-400" /> : <Merge size={12} className="inline mr-1 text-sky-400" />} Lesson Slug
+                  {cardType === "capitalization" ? <PenLine size={12} className="inline mr-1 text-violet-400" /> : cardType === "sentence_types" ? <Braces size={12} className="inline mr-1 text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={12} className="inline mr-1 text-sky-400" /> : <Scale size={12} className="inline mr-1 text-emerald-400" />} Lesson Slug
                 </label>
                 {cardType === "capitalization" ? (
                   <input type="text" value={capitalizationSlug} onChange={(e) => setCapitalizationSlug(e.target.value)}
@@ -402,15 +413,19 @@ export default function AdminDrillsPage() {
                   <input type="text" value={sentenceTypesSlug} onChange={(e) => setSentenceTypesSlug(e.target.value)}
                     placeholder="sentence-types-basics"
                     className="w-full bg-black/40 border border-white/10 focus:border-teal-400 rounded-xl px-4 py-3 text-white outline-none transition" />
-                ) : (
+                ) : cardType === "sentence_combining" ? (
                   <input type="text" value={combiningSlug} onChange={(e) => setCombiningSlug(e.target.value)}
                     placeholder="hamilton-sentence-combining"
                     className="w-full bg-black/40 border border-white/10 focus:border-sky-400 rounded-xl px-4 py-3 text-white outline-none transition" />
+                ) : (
+                  <input type="text" value={trueFalseSlug} onChange={(e) => setTrueFalseSlug(e.target.value)}
+                    placeholder="true-false-science-facts"
+                    className="w-full bg-black/40 border border-white/10 focus:border-emerald-400 rounded-xl px-4 py-3 text-white outline-none transition" />
                 )}
                 <p className="text-[10px] text-white/30 mt-1">
                   The lesson note &amp; hidden answers come from the server-only lesson store. Available slug:{" "}
-                  <code className={cardType === "capitalization" ? "text-violet-300" : cardType === "sentence_types" ? "text-teal-300" : "text-sky-300"}>
-                    {cardType === "capitalization" ? "capitalization-basics" : cardType === "sentence_types" ? "sentence-types-basics" : "hamilton-sentence-combining"}
+                  <code className={cardType === "capitalization" ? "text-violet-300" : cardType === "sentence_types" ? "text-teal-300" : cardType === "sentence_combining" ? "text-sky-300" : "text-emerald-300"}>
+                    {cardType === "capitalization" ? "capitalization-basics" : cardType === "sentence_types" ? "sentence-types-basics" : cardType === "sentence_combining" ? "hamilton-sentence-combining" : "true-false-science-facts"}
                   </code>
                 </p>
               </div>
@@ -492,12 +507,12 @@ export default function AdminDrillsPage() {
 
           <button onClick={cardType !== "quiz" ? handleCreateLessonCard : handleUpload} disabled={submitting}
             className={`w-full py-4 rounded-xl text-white font-bold hover:brightness-110 transition flex items-center justify-center gap-2 disabled:opacity-50 ${
-              cardType === "capitalization" ? "bg-violet-500 hover:bg-violet-400" : cardType === "sentence_types" ? "bg-teal-500 hover:bg-teal-400" : cardType === "sentence_combining" ? "bg-sky-500 hover:bg-sky-400" : "bg-orange-500 hover:bg-orange-400"
+              cardType === "capitalization" ? "bg-violet-500 hover:bg-violet-400" : cardType === "sentence_types" ? "bg-teal-500 hover:bg-teal-400" : cardType === "sentence_combining" ? "bg-sky-500 hover:bg-sky-400" : cardType === "true_false" ? "bg-emerald-500 hover:bg-emerald-400" : "bg-orange-500 hover:bg-orange-400"
             }`}>
-            {submitting ? <Loader2 size={20} className="animate-spin" /> : cardType === "capitalization" ? <PenLine size={20} /> : cardType === "sentence_types" ? <Braces size={20} /> : cardType === "sentence_combining" ? <Merge size={20} /> : <Zap size={20} />}
+            {submitting ? <Loader2 size={20} className="animate-spin" /> : cardType === "capitalization" ? <PenLine size={20} /> : cardType === "sentence_types" ? <Braces size={20} /> : cardType === "sentence_combining" ? <Merge size={20} /> : cardType === "true_false" ? <Scale size={20} /> : <Zap size={20} />}
             {submitting
               ? "Creating Card..."
-              : (cardType === "capitalization" ? "Create Capitalization Card" : cardType === "sentence_types" ? "Create Sentence Types Card" : cardType === "sentence_combining" ? "Create Sentence Combining Card" : "Create Drill Set")}
+              : (cardType === "capitalization" ? "Create Capitalization Card" : cardType === "sentence_types" ? "Create Sentence Types Card" : cardType === "sentence_combining" ? "Create Sentence Combining Card" : cardType === "true_false" ? "Create True or False Card" : "Create Drill Set")}
           </button>
         </div>
       )}
@@ -529,7 +544,7 @@ export default function AdminDrillsPage() {
                       <span>•</span>
                       <span className="uppercase">{set.level}</span>
                       <span>•</span>
-                      <span>{set.question_count} {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" ? "chunks" : "questions"}</span>
+                      <span>{set.question_count} {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" || set.card_type === "true_false" ? "items" : "questions"}</span>
                       <span>•</span>
                       <span><Clock size={10} className="inline" /> {set.time_limit_minutes}m</span>
                       {set.card_type === "capitalization" && (
@@ -545,6 +560,11 @@ export default function AdminDrillsPage() {
                       {set.card_type === "sentence_combining" && (
                         <span className="text-[9px] font-bold uppercase tracking-widest bg-sky-500/15 text-sky-300 px-2 py-0.5 rounded-full">
                           🔗 Sentence Combining
+                        </span>
+                      )}
+                      {set.card_type === "true_false" && (
+                        <span className="text-[9px] font-bold uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full">
+                          ⚖️ True or False
                         </span>
                       )}
                     </div>
@@ -564,7 +584,7 @@ export default function AdminDrillsPage() {
                   {set.description && <p className="text-sm text-white/60">{set.description}</p>}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="bg-black/30 rounded-xl p-3 text-center">
-                      <p className="text-xs text-white/40 uppercase tracking-widest mb-1">{set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" ? "Chunks" : "Questions"}</p>
+                      <p className="text-xs text-white/40 uppercase tracking-widest mb-1">{set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" || set.card_type === "true_false" ? "Items" : "Questions"}</p>
                       <p className="text-xl font-bold text-white">{set.question_count}</p>
                     </div>
                     <div className="bg-black/30 rounded-xl p-3 text-center">
@@ -580,36 +600,42 @@ export default function AdminDrillsPage() {
                   {/* ─── QUESTIONS LIST ─── */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-white/40 uppercase tracking-widest font-semibold pt-2">
-                      <FileText size={12} /> {set.card_type === "capitalization" ? "Practice Sentences" : set.card_type === "sentence_combining" ? "Passage Chunks" : "Questions"}
+                      <FileText size={12} /> {set.card_type === "capitalization" ? "Practice Sentences" : set.card_type === "sentence_combining" ? "Passage Chunks" : set.card_type === "true_false" ? "Statements" : "Questions"}
                     </div>
-                    {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" ? (
+                    {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" || set.card_type === "true_false" ? (
                       <div className={`${
                         set.card_type === "sentence_types"
                           ? "bg-teal-500/10 border-teal-500/25"
                           : set.card_type === "sentence_combining"
                             ? "bg-sky-500/10 border-sky-500/25"
-                            : "bg-violet-500/10 border-violet-500/25"
+                            : set.card_type === "true_false"
+                              ? "bg-emerald-500/10 border-emerald-500/25"
+                              : "bg-violet-500/10 border-violet-500/25"
                       } border rounded-xl p-4 space-y-2`}>
                         <p className="text-sm text-white/80 font-semibold flex items-center gap-2">
                           {set.card_type === "sentence_types"
                             ? <Braces size={14} className="text-teal-300" />
                             : set.card_type === "sentence_combining"
                               ? <Merge size={14} className="text-sky-300" />
-                              : <PenLine size={14} className="text-violet-300" />}
+                              : set.card_type === "true_false"
+                                ? <Scale size={14} className="text-emerald-300" />
+                                : <PenLine size={14} className="text-violet-300" />}
                           {set.card_type === "sentence_types"
                             ? "Sentence types lesson card"
                             : set.card_type === "sentence_combining"
                               ? "Sentence combining lesson card"
-                              : "Capitalization lesson card"}
+                              : set.card_type === "true_false"
+                                ? "True or false lesson card"
+                                : "Capitalization lesson card"}
                         </p>
                         <p className="text-xs text-white/60 leading-relaxed">
                           This card type doesn't use quiz questions. The lesson note and the practice{" "}
-                          {set.card_type === "sentence_combining" ? "passage chunks" : "sentences"}
+                          {set.card_type === "sentence_combining" ? "passage chunks" : set.card_type === "true_false" ? "statements" : "sentences"}
                           (with their hidden answers) are managed in the server-only lesson store, keyed by slug{" "}
                           <code className={`bg-black/40 px-1.5 py-0.5 rounded ${
-                            set.card_type === "sentence_types" ? "text-teal-300" : set.card_type === "sentence_combining" ? "text-sky-300" : "text-violet-300"
+                            set.card_type === "sentence_types" ? "text-teal-300" : set.card_type === "sentence_combining" ? "text-sky-300" : set.card_type === "true_false" ? "text-emerald-300" : "text-violet-300"
                           }`}>{set.capitalization_slug || "—"}</code>.
-                          Students rewrite the chunks and get them checked against the hidden answers — no quiz questions needed.
+                          Students judge the items and get them checked against the hidden answers — no quiz questions needed.
                         </p>
                       </div>
                     ) : questionsLoading ? (
