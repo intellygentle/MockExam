@@ -22,6 +22,7 @@ export type Question = {
   correct: OptionKey;
   explanation: string;
   passage?: string;
+  instruction?: string;
 };
 
 type Props = {
@@ -234,6 +235,13 @@ ${data.explanation}`
         </span>
       </div>
       
+      {question.instruction && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-policeGold font-semibold">📋 Instruction</p>
+          <LatexRenderer text={question.instruction} className="text-sm sm:text-base text-white/80 leading-relaxed whitespace-pre-wrap" as="p" />
+        </div>
+      )}
+
       {question.passage && (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
           <p className="text-[10px] uppercase tracking-[0.3em] text-policeGold font-semibold">📖 Passage</p>

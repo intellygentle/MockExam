@@ -60,6 +60,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             >
               Study Materials
             </Link>
+            <Link
+              href={`/${secretPath}/drills`}
+              className="px-4 py-2 rounded-lg border border-orange-500/30 text-sm hover:bg-orange-500/10 transition text-orange-400"
+            >
+              🔥 Drills
+            </Link>
+            <Link
+              href={`/${secretPath}/drills/analytics`}
+              className="px-4 py-2 rounded-lg border border-blue-500/30 text-sm hover:bg-blue-500/10 transition text-blue-400"
+            >
+              📊 Analytics
+            </Link>
           </nav>
         </div>
       </div>

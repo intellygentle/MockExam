@@ -73,6 +73,7 @@ export async function POST(request: Request) {
         correct: q.correct_option,
         explanation: q.explanation || "",
         passage: q.passage || undefined,
+        instruction: q.instruction || undefined,
       };
     });
 

@@ -17,6 +17,7 @@ type Question = {
   option_a: string; option_b: string; option_c: string; option_d: string;
   option_e: string;
   passage: string;
+  instruction: string;
   correct_option: "a" | "b" | "c" | "d" | "e"; explanation: string;
 };
 
@@ -56,7 +57,7 @@ export default function AdminQuestionsPage() {
   const [formData, setFormData] = useState<Question>({
     level: "jss3", subject_id: null, year: currentYear,
     category: "", question: "", option_a: "", option_b: "", option_c: "", option_d: "", option_e: "",
-    correct_option: "a", explanation: "", passage: "",
+    correct_option: "a", explanation: "", passage: "", instruction: "",
   });
 
   // ─── COMPUTED ──────────────────────────────────────
@@ -151,6 +152,7 @@ export default function AdminQuestionsPage() {
       option_e: q.option_e || "",
       correct_option: q.correct_option, explanation: q.explanation,
       passage: q.passage || "",
+      instruction: q.instruction || "",
     });
     setEditingId(q.id ?? null);
     setShowUpload(false);
@@ -173,6 +175,7 @@ export default function AdminQuestionsPage() {
         option_e: formData.option_e || "",
         correct_option: formData.correct_option, explanation: formData.explanation,
         passage: formData.passage || "",
+        instruction: formData.instruction || "",
       };
       if (editingId) {
         const { error } = await supabase.from("questions").update(record).eq("id", editingId);
@@ -190,7 +193,7 @@ export default function AdminQuestionsPage() {
 
   const resetForm = () => {
     setFormData({ level: "jss3", subject_id: null, year: currentYear, category: "", question: "",
-      option_a: "", option_b: "", option_c: "", option_d: "", option_e: "", correct_option: "a", explanation: "", passage: "" });
+      option_a: "", option_b: "", option_c: "", option_d: "", option_e: "", correct_option: "a", explanation: "", passage: "", instruction: "" });
     setEditingId(null);
     setShowForm(false);
   };
@@ -435,6 +438,13 @@ export default function AdminQuestionsPage() {
               <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Question</label>
               <textarea value={formData.question} onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                 className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition min-h-[100px]" required placeholder="Enter the question..." />
+            </div>
+            <div className="md:col-span-3">
+              <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">
+                <span className="mr-1">📋</span> Instruction <span className="text-white/30">(optional — section instructions for students)</span>
+              </label>
+              <textarea value={formData.instruction} onChange={(e) => setFormData({ ...formData, instruction: e.target.value })}
+                className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition min-h-[80px]" placeholder="e.g. From the options lettered A to D, choose the word that best completes the sentence." />
             </div>
             <div className="md:col-span-3">
               <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">

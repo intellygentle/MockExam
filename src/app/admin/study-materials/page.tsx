@@ -609,6 +609,7 @@ level_number,level_title,type,front,back,question,option_a,option_b,option_c,opt
                         correct_option: correctCol >= 0 ? q[correctCol] || 'a' : 'a',
                         explanation: explCol >= 0 ? q[explCol] || '' : '',
                         passage: '',
+                        instruction: '',
                       };
                       
                       const { data: inserted, error: insError } = await supabase

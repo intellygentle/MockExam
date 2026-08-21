@@ -44,6 +44,7 @@ type PracticeQuestion = {
   correct: OptionKey;
   explanation: string;
   passage?: string;
+  instruction?: string;
 };
 
 export default function StudyPage() {
@@ -188,6 +189,7 @@ export default function StudyPage() {
                     correct: q.correct_option,
                     explanation: q.explanation,
                     passage: q.passage || undefined,
+                    instruction: q.instruction || undefined,
                   };
                 }).sort(() => Math.random() - 0.5);
                 setPracticeQuestions(mapped);

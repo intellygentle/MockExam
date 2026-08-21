@@ -29,6 +29,7 @@ type Question = {
   question: string; options: OptionsRecord;
   correct: OptionKey; explanation: string;
   passage?: string;
+  instruction?: string;
 };
 
 type QuizPhase = "setup" | "playing" | "results";
@@ -336,6 +337,7 @@ export default function PracticePage() {
             question: q.question, options: opts,
             correct: q.correct_option, explanation: q.explanation,
             passage: q.passage || undefined,
+            instruction: q.instruction || undefined,
           };
         });
         setQuestions(mapped.sort(() => Math.random() - 0.5));
@@ -438,7 +440,7 @@ export default function PracticePage() {
         const mapped = qData.map((q) => {
           const opts: OptionsRecord = { a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d };
           if (q.option_e && q.option_e.trim()) opts.e = q.option_e;
-          return { id: q.id, category: q.category, level: q.level, year: q.year, question: q.question, options: opts, correct: q.correct_option, explanation: q.explanation, passage: q.passage || undefined };
+          return { id: q.id, category: q.category, level: q.level, year: q.year, question: q.question, options: opts, correct: q.correct_option, explanation: q.explanation, passage: q.passage || undefined, instruction: q.instruction || undefined };
         });
         setQuestions(mapped.sort(() => Math.random() - 0.5));
         setSessionWrongIds(new Set(wrongIds));

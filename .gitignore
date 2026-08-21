@@ -39,6 +39,9 @@ yarn-error.log*
 # data/import files (CSV, PDF, TXT, etc.) not needed for deployment
 /_data/
 
+# supabase migrations
+supabase/migration-v*.sql
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

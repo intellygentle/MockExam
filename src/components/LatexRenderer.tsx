@@ -127,32 +127,39 @@ function autoWrapLatex(text: string): string {
   // \text{  → \text{    (tab + "ext{" from CSV interpreting \text, t consumed by \t)
   result = result.replace(/\text\{/g, "\\text{");
 
-  // ── STEP 2: Strip ALL remaining control characters (including tabs now) ──
+  // ── STEP 2: Strip remaining control characters (preserving newlines) ──
   // After fixing the patterns above, remaining control chars are pure corruption
-  result = result.replace(/[\x00-\x1F]/g, "");
+  // (e.g. form-feed 0x0C). IMPORTANT: keep \n (0x0A), \r (0x0D) and \t (0x09)
+  // so multi-paragraph passages keep their paragraph breaks.
+  result = result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 
   // ── STEP 3: Fix remaining missing backslashes after strip ──
   // Some commands may have the `t` consumed (\times → imes, \text → ext)
   // Fix: "imes" (without t) → \times  (the \t was consumed, t is gone)
-  result = result.replace(/(?<!\\)imes(?!\w)/g, "\\times");
+  // NOTE: the (?<![a-zA-Z\\]) guard prevents mangling real English words
+  // that merely end in these substrings (e.g. "Sometimes" ends in "imes").
+  // KNOWN LIMITATION: a standalone English word "times" preceded by a space
+  // ("three times a day") is still treated as \times — indistinguishable from
+  // math like "5 times 6". Data should use explicit \(...\) delimiters for math.
+  result = result.replace(/(?<![a-zA-Z\\])imes(?!\w)/g, "\\times");
   // Fix: "ext{" (without t) → \text{  (the \t was consumed, t is gone)
-  result = result.replace(/(?<!\\)ext\{/g, "\\text{");
+  result = result.replace(/(?<![a-zA-Z\\])ext\{/g, "\\text{");
   // Fix: "rac{" (without backslash) → \frac{
-  result = result.replace(/(?<!\\)rac\{/g, "\\frac{");
+  result = result.replace(/(?<![a-zA-Z\\])rac\{/g, "\\frac{");
   // Fix: "sqrt{" (without backslash) → \sqrt{
-  result = result.replace(/(?<!\\)sqrt\{/g, "\\sqrt{");
+  result = result.replace(/(?<![a-zA-Z\\])sqrt\{/g, "\\sqrt{");
   // Fix: "times" (without backslash) → \times
-  result = result.replace(/(?<!\\)times(?!\w)/g, "\\times");
+  result = result.replace(/(?<![a-zA-Z\\])times(?!\w)/g, "\\times");
   // Fix: "text{" (without backslash) → \text{
-  result = result.replace(/(?<!\\)text\{/g, "\\text{");
+  result = result.replace(/(?<![a-zA-Z\\])text\{/g, "\\text{");
 
   // Common operators (word boundaries to avoid matching inside words)
-  result = result.replace(/(?<!\\)div(?!\w)/g, "\\div");
-  result = result.replace(/(?<!\\)pm(?!\w)/g, "\\pm");
-  result = result.replace(/(?<!\\)leq(?!\w)/g, "\\leq");
-  result = result.replace(/(?<!\\)geq(?!\w)/g, "\\geq");
-  result = result.replace(/(?<!\\)neq(?!\w)/g, "\\neq");
-  result = result.replace(/(?<!\\)cdot(?!\w)/g, "\\cdot");
+  result = result.replace(/(?<![a-zA-Z\\])div(?!\w)/g, "\\div");
+  result = result.replace(/(?<![a-zA-Z\\])pm(?!\w)/g, "\\pm");
+  result = result.replace(/(?<![a-zA-Z\\])leq(?!\w)/g, "\\leq");
+  result = result.replace(/(?<![a-zA-Z\\])geq(?!\w)/g, "\\geq");
+  result = result.replace(/(?<![a-zA-Z\\])neq(?!\w)/g, "\\neq");
+  result = result.replace(/(?<![a-zA-Z\\])cdot(?!\w)/g, "\\cdot");
 
   // ── STEP 4: Auto-wrap bare LaTeX in delimiters (only if none exist) ──
   if (!/\\\(/.test(result) && !/\\\[/.test(result)) {

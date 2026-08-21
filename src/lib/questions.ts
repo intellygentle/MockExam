@@ -13,6 +13,8 @@ export type Question = {
   options: OptionsRecord;
   correct: OptionKey;
   explanation: string;
+  passage?: string;
+  instruction?: string;
 };
 
 /** Return the list of option keys to render based on whether option_e exists */

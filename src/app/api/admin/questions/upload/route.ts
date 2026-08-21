@@ -58,15 +58,18 @@ export async function POST(req: Request) {
     const baseHeader = ["level", "subject", "year", "question", "option_a", "option_b", "option_c", "option_d", "correct_option", "explanation"];
     const optionECol = "option_e";
     const passageCol = "passage";
+    const instructionCol = "instruction";
 
     // Determine columns: 10 (base), 11 (+passage), 11 (+option_e), 12 (+both)
     const cols = new Set(header);
     const hasOptionEHeader = cols.has(optionECol);
     const hasPassageHeader = cols.has(passageCol);
+    const hasInstructionHeader = cols.has(instructionCol);
 
     // Build the expected header order conditionally
     const expectedHeader = [...baseHeader];
     if (hasPassageHeader) expectedHeader.push(passageCol);
+    if (hasInstructionHeader) expectedHeader.push(instructionCol);
     if (hasOptionEHeader) expectedHeader.push(optionECol);
 
     if (header.length < 10 || header.length > 12 || !expectedHeader.every((h, i) => header[i] === h)) {
@@ -108,6 +111,7 @@ export async function POST(req: Request) {
     const colCorrect = colIndex("correct_option");
     const colExplanation = colIndex("explanation");
     const colPassage = hasPassageHeader ? colIndex("passage") : -1;
+    const colInstruction = hasInstructionHeader ? colIndex("instruction") : -1;
     const colOE = hasOptionEHeader ? colIndex("option_e") : -1;
 
     const expectedCols = expectedHeader.length;
@@ -204,6 +208,7 @@ export async function POST(req: Request) {
       const option_d = row[colOD]?.trim();
       const option_e = colOE >= 0 ? row[colOE]?.trim() : "";
       const passage = colPassage >= 0 ? row[colPassage]?.trim() : "";
+      const instruction = colInstruction >= 0 ? row[colInstruction]?.trim() : "";
       const correctOption = row[colCorrect]?.trim();
       const explanation = row[colExplanation]?.trim();
 
@@ -239,6 +244,7 @@ export async function POST(req: Request) {
         option_d,
         option_e: option_e || "",
         passage: passage || "",
+        instruction: instruction || "",
         correct_option: correctOption.toLowerCase(),
         explanation,
       };
