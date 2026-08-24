@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import {
   PlusCircle, Trash2, Upload, Download, Loader2, Edit3, Save, X,
   Clock, Zap, Flame, BookOpen, FileText, ChevronDown, ChevronUp, PenLine,
-  Braces, Merge, Scale, ScrollText
+  Braces, Merge, Scale, ScrollText, Bookmark
 } from "lucide-react";
 
 type Subject = { id: number; name: string; department_id: number | null; level: string };
@@ -46,7 +46,7 @@ export default function AdminDrillsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
-  const [cardType, setCardType] = useState<"quiz" | "capitalization" | "sentence_types" | "sentence_combining" | "true_false" | "passage">("quiz");
+  const [cardType, setCardType] = useState<"quiz" | "capitalization" | "sentence_types" | "sentence_combining" | "true_false" | "passage" | "vocabulary">("quiz");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subjectName, setSubjectName] = useState("");
@@ -216,6 +216,34 @@ export default function AdminDrillsPage() {
     } catch { toast.error("Delete failed."); }
   };
 
+  // Create a vocabulary card: word+meaning pairs from CSV (question=word, explanation=meaning)
+  const handleCreateVocabularyCard = async () => {
+    if (!title.trim()) { toast.error("Title is required."); return; }
+    if (!csvFile) { toast.error("Please select a CSV file with word/meaning pairs."); return; }
+
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", csvFile);
+      fd.append("title", title.trim());
+      fd.append("description", description.trim());
+      fd.append("time_limit_minutes", String(timeLimit));
+      fd.append("level", level);
+      fd.append("subject_name", subjectName.trim());
+      fd.append("card_type", "vocabulary");
+
+      const res = await fetch("/api/drills/upload", { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!res.ok) { toast.error(data.error || "Upload failed."); return; }
+
+      toast.success(`Vocabulary "${data.drillSet.title}" created with ${data.inserted} words!`);
+      resetForm();
+      loadData();
+    } catch { toast.error("Upload failed."); }
+    finally { setSubmitting(false); }
+  };
+
   // Create a passage card: passage text in description, questions from CSV
   const handleCreatePassageCard = async () => {
     if (!title.trim()) { toast.error("Title is required."); return; }
@@ -373,9 +401,9 @@ export default function AdminDrillsPage() {
       {showForm && (
         <div className="card space-y-5 border-orange-500/30 bg-gradient-to-br from-orange-500/5 to-policeRed/5">
           <div className="flex items-center gap-3 pb-2 border-b border-white/10">
-            {cardType === "capitalization" ? <PenLine size={22} className="text-violet-400" /> : cardType === "sentence_types" ? <Braces size={22} className="text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={22} className="text-sky-400" /> : cardType === "true_false" ? <Scale size={22} className="text-emerald-400" /> : cardType === "passage" ? <ScrollText size={22} className="text-rose-400" /> : <Zap size={22} className="text-orange-400" />}
-            <h3 className={`text-lg font-heading font-bold ${cardType === "passage" ? "text-rose-400" : "text-orange-400"}`}>
-              {cardType === "capitalization" ? "Create Capitalization Lesson Card" : cardType === "sentence_types" ? "Create Sentence Types Lesson Card" : cardType === "sentence_combining" ? "Create Sentence Combining Lesson Card" : cardType === "true_false" ? "Create True or False Lesson Card" : cardType === "passage" ? "Create Reading Passage" : "Create Timed Drill Set"}
+            {cardType === "capitalization" ? <PenLine size={22} className="text-violet-400" /> : cardType === "sentence_types" ? <Braces size={22} className="text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={22} className="text-sky-400" /> : cardType === "true_false" ? <Scale size={22} className="text-emerald-400" /> : cardType === "passage" ? <ScrollText size={22} className="text-rose-400" /> : cardType === "vocabulary" ? <Bookmark size={22} className="text-amber-400" /> : <Zap size={22} className="text-orange-400" />}
+            <h3 className={`text-lg font-heading font-bold ${cardType === "passage" ? "text-rose-400" : cardType === "vocabulary" ? "text-amber-400" : "text-orange-400"}`}>
+              {cardType === "capitalization" ? "Create Capitalization Lesson Card" : cardType === "sentence_types" ? "Create Sentence Types Lesson Card" : cardType === "sentence_combining" ? "Create Sentence Combining Lesson Card" : cardType === "true_false" ? "Create True or False Lesson Card" : cardType === "passage" ? "Create Reading Passage" : cardType === "vocabulary" ? "Create Key Vocabulary Card" : "Create Timed Drill Set"}
             </h3>
           </div>
 
@@ -430,6 +458,14 @@ export default function AdminDrillsPage() {
                 }`}>
                 📖 Reading Passage
               </button>
+              <button type="button" onClick={() => setCardType("vocabulary")}
+                className={`rounded-xl px-4 py-3 text-sm font-bold border transition ${
+                  cardType === "vocabulary"
+                    ? "border-amber-400/60 bg-amber-500/15 text-amber-300"
+                    : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
+                }`}>
+                📒 Key Vocabulary
+              </button>
             </div>
           </div>
 
@@ -440,7 +476,14 @@ export default function AdminDrillsPage() {
                 placeholder={cardType === "capitalization" ? "e.g. Capitalization Basics" : "e.g. Mathematics Speed Drill"}
                 className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition" />
             </div>
-            {cardType === "passage" ? (
+            {cardType === "vocabulary" ? (
+              <div>
+                <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Subject</label>
+                <input type="text" value={subjectName} onChange={(e) => setSubjectName(e.target.value)}
+                  placeholder="e.g. English (auto-created if new)"
+                  className="w-full bg-black/40 border border-white/10 focus:border-amber-400 rounded-xl px-4 py-3 text-white outline-none transition" />
+              </div>
+            ) : cardType === "passage" ? (
               <div>
                 <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Subject</label>
                 <input type="text" value={subjectName} onChange={(e) => setSubjectName(e.target.value)}
@@ -519,7 +562,7 @@ export default function AdminDrillsPage() {
             )}
           </div>
 
-          {(cardType === "quiz" || cardType === "passage") && (
+          {(cardType === "quiz" || cardType === "passage" || cardType === "vocabulary") && (
           <div>
             <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">
               <span className={cardType === "passage" ? "text-rose-400" : "text-orange-400"}>
@@ -565,14 +608,14 @@ export default function AdminDrillsPage() {
           </details>
           )}
 
-          <button onClick={cardType === "passage" ? handleCreatePassageCard : cardType !== "quiz" ? handleCreateLessonCard : handleUpload} disabled={submitting}
+          <button onClick={cardType === "vocabulary" ? handleCreateVocabularyCard : cardType === "passage" ? handleCreatePassageCard : cardType !== "quiz" ? handleCreateLessonCard : handleUpload} disabled={submitting}
             className={`w-full py-4 rounded-xl text-white font-bold hover:brightness-110 transition flex items-center justify-center gap-2 disabled:opacity-50 ${
-              cardType === "capitalization" ? "bg-violet-500 hover:bg-violet-400" : cardType === "sentence_types" ? "bg-teal-500 hover:bg-teal-400" : cardType === "sentence_combining" ? "bg-sky-500 hover:bg-sky-400" : cardType === "true_false" ? "bg-emerald-500 hover:bg-emerald-400" : cardType === "passage" ? "bg-rose-500 hover:bg-rose-400" : "bg-orange-500 hover:bg-orange-400"
+              cardType === "capitalization" ? "bg-violet-500 hover:bg-violet-400" : cardType === "sentence_types" ? "bg-teal-500 hover:bg-teal-400" : cardType === "sentence_combining" ? "bg-sky-500 hover:bg-sky-400" : cardType === "true_false" ? "bg-emerald-500 hover:bg-emerald-400" : cardType === "passage" ? "bg-rose-500 hover:bg-rose-400" : cardType === "vocabulary" ? "bg-amber-500 hover:bg-amber-400" : "bg-orange-500 hover:bg-orange-400"
             }`}>
-            {submitting ? <Loader2 size={20} className="animate-spin" /> : cardType === "capitalization" ? <PenLine size={20} /> : cardType === "sentence_types" ? <Braces size={20} /> : cardType === "sentence_combining" ? <Merge size={20} /> : cardType === "true_false" ? <Scale size={20} /> : cardType === "passage" ? <ScrollText size={20} /> : <Zap size={20} />}
+            {submitting ? <Loader2 size={20} className="animate-spin" /> : cardType === "capitalization" ? <PenLine size={20} /> : cardType === "sentence_types" ? <Braces size={20} /> : cardType === "sentence_combining" ? <Merge size={20} /> : cardType === "true_false" ? <Scale size={20} /> : cardType === "passage" ? <ScrollText size={20} /> : cardType === "vocabulary" ? <Bookmark size={20} /> : <Zap size={20} />}
             {submitting
               ? "Creating Card..."
-              : (cardType === "capitalization" ? "Create Capitalization Card" : cardType === "sentence_types" ? "Create Sentence Types Card" : cardType === "sentence_combining" ? "Create Sentence Combining Card" : cardType === "true_false" ? "Create True or False Card" : cardType === "passage" ? "Create Reading Passage" : "Create Drill Set")}
+              : (cardType === "capitalization" ? "Create Capitalization Card" : cardType === "sentence_types" ? "Create Sentence Types Card" : cardType === "sentence_combining" ? "Create Sentence Combining Card" : cardType === "true_false" ? "Create True or False Card" : cardType === "passage" ? "Create Reading Passage" : cardType === "vocabulary" ? "Create Vocabulary Card" : "Create Drill Set")}
           </button>
         </div>
       )}
@@ -630,6 +673,11 @@ export default function AdminDrillsPage() {
                       {set.card_type === "passage" && (
                         <span className="text-[9px] font-bold uppercase tracking-widest bg-rose-500/15 text-rose-300 px-2 py-0.5 rounded-full">
                           📖 Reading Passage
+                        </span>
+                      )}
+                      {set.card_type === "vocabulary" && (
+                        <span className="text-[9px] font-bold uppercase tracking-widest bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full">
+                          📒 Key Vocabulary
                         </span>
                       )}
                     </div>

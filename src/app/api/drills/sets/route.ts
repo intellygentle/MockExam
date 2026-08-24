@@ -35,6 +35,7 @@ export async function GET(req: Request) {
         const cardType = set.card_type || "quiz";
         const isLessonCard = cardType === "capitalization" || cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false";
         const isPassageCard = cardType === "passage";
+        const isVocabCard = cardType === "vocabulary";
         // For lesson cards the item count comes from the server store
         let questionCount = set.question_count;
         if (isLessonCard) {
@@ -48,8 +49,8 @@ export async function GET(req: Request) {
         let mastered = false;
         let attemptHistory: any[] = [];
         if (studentName.trim()) {
-          if (isPassageCard) {
-            // Passage cards are discussion-based — no automatic mastery tracking
+          if (isPassageCard || isVocabCard) {
+            // Passage & vocabulary cards are not auto-graded
             totalAttempts = 0;
             mastered = false;
             attemptHistory = [];

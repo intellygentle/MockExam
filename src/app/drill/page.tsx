@@ -13,6 +13,7 @@ import {
 import QuestionCard from "@/components/QuestionCard";
 import LessonCard from "@/components/LessonCard";
 import PassageCard from "@/components/PassageCard";
+import VocabularyCard from "@/components/VocabularyCard";
 import type { OptionKey, OptionsRecord } from "@/lib/questions";
 import confetti from "canvas-confetti";
 
@@ -63,7 +64,7 @@ type DrillQuestion = {
   category: string;
 };
 
-type Phase = "select" | "playing" | "lesson" | "passage" | "results";
+type Phase = "select" | "playing" | "lesson" | "passage" | "vocabulary" | "results";
 
 type StackDrillSet = {
   id: number;
@@ -102,6 +103,8 @@ export default function DrillPage() {
   const [lessonFresh, setLessonFresh] = useState(false);
   // Passage questions (discussion prompts, not graded)
   const [passageQuestions, setPassageQuestions] = useState<{ id: number; question: string; instruction?: string }[]>([]);
+  // Vocabulary words (word + meaning pairs for timed study/recall)
+  const [vocabWords, setVocabWords] = useState<{ id: number; word: string; meaning: string }[]>([]);
 
   // Playing state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -191,6 +194,25 @@ export default function DrillPage() {
         };
       }).filter(Boolean) as DrillQuestion[];
     } catch { return []; }
+  };
+
+  const handleStartVocab = async (set: DrillSet) => {
+    const name = studentName.trim() || localStorage.getItem("scholars-arena-name") || "Anonymous";
+    localStorage.setItem("scholars-arena-name", name);
+    setStudentName(name);
+    if (schoolName.trim()) localStorage.setItem("scholars-arena-school", schoolName.trim());
+    setSelectedSet(set);
+
+    // Load vocabulary words: question=word, explanation=meaning
+    const qs = await loadQuestions(set.id);
+    setVocabWords(
+      qs.map((q: DrillQuestion) => ({
+        id: q.id,
+        word: q.question,
+        meaning: q.explanation || "",
+      }))
+    );
+    setPhase("vocabulary");
   };
 
   const handleStartPassage = async (set: DrillSet) => {
@@ -386,6 +408,9 @@ export default function DrillPage() {
   const isPassageCard = (set: any) =>
     set.card_type === "passage";
 
+  const isVocabCard = (set: any) =>
+    set.card_type === "vocabulary";
+
   const lessonBadge = (set: DrillSet) => {
     if (set.card_type === "capitalization") {
       return { label: "✍️ Capitalization", classes: "bg-violet-500/15 text-violet-300" };
@@ -402,11 +427,20 @@ export default function DrillPage() {
     if (set.card_type === "passage") {
       return { label: "📖 Reading Passage", classes: "bg-rose-500/15 text-rose-300" };
     }
+    if (set.card_type === "vocabulary") {
+      return { label: "📒 Key Vocabulary", classes: "bg-amber-500/15 text-amber-300" };
+    }
     return null;
   };
 
   // ── SELECT PHASE ──
   if (phase === "select") {
+    // Drill sets that already live inside a stack — hide them from "More Drills"
+    const stackedIds = new Set(
+      stacks.flatMap((s) => s.drillSets.map((d) => d.id))
+    );
+    const unstackedDrillSets = drillSets.filter((s) => !stackedIds.has(s.id));
+
     return (
       <div className="max-w-4xl mx-auto space-y-8 py-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
@@ -550,6 +584,7 @@ export default function DrillPage() {
                                 set={set}
                                 isLessonCard={isLessonCard}
                                 isPassageCard={isPassageCard}
+                                isVocabCard={isVocabCard}
                                 lessonBadge={lessonBadge}
                                 onStartLesson={() => {
                                   const fullSet: DrillSet = {
@@ -582,6 +617,16 @@ export default function DrillPage() {
                                   };
                                   await handleStartPassage(fullSet);
                                 }}
+                                onStartVocab={async () => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  await handleStartVocab(fullSet);
+                                }}
                                 startingDrill={startingDrill}
                               />
                             ))}
@@ -608,7 +653,7 @@ export default function DrillPage() {
             <h2 className="text-xl font-heading font-bold text-white">No Drill Sets Available</h2>
             <p className="text-white/60">No timed drills have been created yet. Check back soon!</p>
           </div>
-        ) : drillSets.length > 0 ? (
+        ) : unstackedDrillSets.length > 0 ? (
           <>
             {stacks.length > 0 && (
               <div className="flex items-center gap-2 pt-2">
@@ -617,7 +662,7 @@ export default function DrillPage() {
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {drillSets.map((set, idx) => (
+              {unstackedDrillSets.map((set, idx) => (
                 <motion.button key={set.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -641,6 +686,8 @@ export default function DrillPage() {
                                 ? "bg-gradient-to-br from-emerald-500/20 to-green-500/20 text-emerald-300"
                               : set.card_type === "passage"
                                 ? "bg-gradient-to-br from-rose-500/20 to-pink-500/20 text-rose-300"
+                              : set.card_type === "vocabulary"
+                                ? "bg-gradient-to-br from-amber-500/20 to-yellow-500/20 text-amber-300"
                                 : "bg-gradient-to-br from-orange-500/20 to-policeRed/20 text-orange-400"
                       }`}>
                         {set.title[0]}
@@ -664,11 +711,16 @@ export default function DrillPage() {
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <BrainCircuit size={14} className="text-blue-400 mx-auto mb-0.5" />
                       <p className="text-sm font-bold text-white">{set.question_count}</p>
-                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : "Sentences") : "Questions"}</p>
+                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isVocabCard(set) ? "Vocab Words" : isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : "Sentences") : "Questions"}</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <Clock size={14} className="text-policeGold mx-auto mb-0.5" />
-                      {isPassageCard(set) ? (
+                      {isVocabCard(set) ? (
+                        <>
+                          <p className="text-sm font-bold text-white">{set.time_limit_minutes}m</p>
+                          <p className="text-[8px] uppercase tracking-widest text-white/40">Study</p>
+                        </>
+                      ) : isPassageCard(set) ? (
                         <>
                           <p className="text-sm font-bold text-white">Self</p>
                           <p className="text-[8px] uppercase tracking-widest text-white/40">Paced</p>
@@ -716,7 +768,12 @@ export default function DrillPage() {
                   {selectedSet?.id === set.id && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 pt-4 border-t border-white/10">
                       {set.description && <p className="text-xs text-white/60 mb-4 line-clamp-3">{set.description}</p>}
-                      {isPassageCard(set) ? (
+                      {isVocabCard(set) ? (
+                        <button onClick={(e) => { e.stopPropagation(); handleStartVocab(set); }}
+                          className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                          <BookOpen size={16} /> Study Vocabulary
+                        </button>
+                      ) : isPassageCard(set) ? (
                         <button onClick={(e) => { e.stopPropagation(); handleStartPassage(set); }}
                           className="w-full flex items-center justify-center gap-2 bg-rose-500 text-white font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
                           <BookOpen size={16} /> Read Passage
@@ -836,6 +893,23 @@ export default function DrillPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+    );
+  }
+
+  // ── VOCABULARY CARD PHASE ──
+  if (phase === "vocabulary" && selectedSet) {
+    return (
+      <VocabularyCard
+        set={selectedSet}
+        words={vocabWords}
+        studentName={studentName}
+        onDone={() => {
+          setPhase("select");
+          setSelectedSet(null);
+          setVocabWords([]);
+          loadDrillSets();
+        }}
+      />
     );
   }
 
@@ -1101,19 +1175,23 @@ function LessonSetCard({
   set,
   isLessonCard,
   isPassageCard,
+  isVocabCard,
   lessonBadge,
   onStartLesson,
   onStartDrill,
   onStartPassage,
+  onStartVocab,
   startingDrill,
 }: {
   set: StackDrillSet;
   isLessonCard: (s: any) => boolean;
   isPassageCard: (s: any) => boolean;
+  isVocabCard: (s: any) => boolean;
   lessonBadge: (s: any) => { label: string; classes: string } | null;
   onStartLesson: () => void;
   onStartDrill: () => void;
   onStartPassage: () => void;
+  onStartVocab: () => void;
   startingDrill: boolean;
 }) {
   const badge = lessonBadge(set);
@@ -1139,14 +1217,16 @@ function LessonSetCard({
               </span>
             )}
             <span className="text-[10px] text-white/40">
-              {set.question_count} {isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : "sentences") : "questions"}
+              {set.question_count} {isVocabCard(set) ? "words" : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : "sentences") : "questions"}
             </span>
           </div>
         </div>
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (isPassageCard({ card_type: set.card_type })) {
+            if (isVocabCard({ card_type: set.card_type })) {
+              onStartVocab();
+            } else if (isPassageCard({ card_type: set.card_type })) {
               onStartPassage();
             } else if (isLessonCard({ card_type: set.card_type })) {
               onStartLesson();
@@ -1164,12 +1244,12 @@ function LessonSetCard({
           {set.mastered ? (
             <>
               <RotateCcw size={13} />
-              {isPassageCard({ card_type: set.card_type }) ? "Read Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
+              {isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
             </>
           ) : (
             <>
-              {isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
-              {isPassageCard({ card_type: set.card_type }) ? "Read" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
+              {isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
+              {isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
             </>
           )}
         </button>

@@ -47,6 +47,7 @@ export async function POST(req: Request) {
     const subjectName = (formData.get("subject_name") as string) || "";
     const cardType = (formData.get("card_type") as string) || "quiz";
     const isPassage = cardType === "passage";
+    const isVocab = cardType === "vocabulary";
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
@@ -84,7 +85,14 @@ export async function POST(req: Request) {
     if (hasInstruction) expectedHeader.push("instruction");
     if (hasOptionE) expectedHeader.push("option_e");
 
-    if (header.length < 7 || !baseHeader.every((h) => header.includes(h))) {
+    // For vocabulary, only need question + explanation
+    if (isVocab) {
+      if (!header.includes("question") || !header.includes("explanation")) {
+        return NextResponse.json({
+          error: "Vocabulary CSV must have columns: question, explanation (question=word, explanation=meaning)",
+        }, { status: 400 });
+      }
+    } else if (header.length < 7 || !baseHeader.every((h) => header.includes(h))) {
       return NextResponse.json({
         error: `Invalid CSV format. Expected columns: ${expectedHeader.join(", ")}`,
       }, { status: 400 });
@@ -148,11 +156,11 @@ export async function POST(req: Request) {
         errors.push({ row: rowNum, message: "Missing question text." });
         continue;
       }
-      if (!isPassage && (!option_a || !option_b || !option_c || !option_d)) {
+      if (!isPassage && !isVocab && (!option_a || !option_b || !option_c || !option_d)) {
         errors.push({ row: rowNum, message: "Missing required option fields." });
         continue;
       }
-      if (!isPassage && !["a", "b", "c", "d", "e"].includes(correctOption?.toLowerCase() || "")) {
+      if (!isPassage && !isVocab && !["a", "b", "c", "d", "e"].includes(correctOption?.toLowerCase() || "")) {
         errors.push({ row: rowNum, message: `Invalid correct_option "${correctOption}".` });
         continue;
       }
@@ -163,14 +171,14 @@ export async function POST(req: Request) {
         level,
         year: new Date().getFullYear(),
         question,
-        option_a: isPassage ? "" : option_a,
-        option_b: isPassage ? "" : option_b,
-        option_c: isPassage ? "" : option_c,
-        option_d: isPassage ? "" : option_d,
+        option_a: (isPassage || isVocab) ? "" : option_a,
+        option_b: (isPassage || isVocab) ? "" : option_b,
+        option_c: (isPassage || isVocab) ? "" : option_c,
+        option_d: (isPassage || isVocab) ? "" : option_d,
         option_e: option_e || "",
         passage: passage || "",
         instruction: instruction || "",
-        correct_option: isPassage ? "a" : correctOption.toLowerCase(),
+        correct_option: (isPassage || isVocab) ? "a" : correctOption.toLowerCase(),
         explanation: explanation || "",
       });
     }

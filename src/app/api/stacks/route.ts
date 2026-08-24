@@ -63,6 +63,7 @@ export async function GET(req: Request) {
               cardType === "sentence_combining" ||
               cardType === "true_false";
             const isPassageCard = cardType === "passage";
+            const isVocabCard = cardType === "vocabulary";
 
             let questionCount = set.question_count;
             // For lesson cards the count comes from the server-side definition
@@ -78,9 +79,8 @@ export async function GET(req: Request) {
             let mastered = false;
             let totalAttempts = 0;
             if (studentName.trim()) {
-              // Passage cards are not auto-graded — mark as mastered=false always
-              if (isPassageCard) {
-                // No attempt tracking for passage cards (discussion-based, not auto-graded)
+              // Passage & vocab cards are not auto-graded
+              if (isPassageCard || isVocabCard) {
                 totalAttempts = 0;
                 mastered = false;
               } else if (isLessonCard) {
