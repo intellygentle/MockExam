@@ -6,12 +6,13 @@ import {
   Clock, Timer, Zap, Trophy, Target, ArrowRight, ArrowLeft,
   User, Shield, AlertTriangle,
   Loader2, RotateCcw, BookOpen, BrainCircuit,
-  Hourglass, Flame, Sparkles, ChevronRight,
+  Hourglass, Flame, Sparkles, ChevronRight, ChevronDown,
   TrendingUp, TrendingDown, Minus, BadgeCheck, PencilLine,
-  type LucideIcon
+  Layers, type LucideIcon
 } from "lucide-react";
 import QuestionCard from "@/components/QuestionCard";
 import LessonCard from "@/components/LessonCard";
+import PassageCard from "@/components/PassageCard";
 import type { OptionKey, OptionsRecord } from "@/lib/questions";
 import confetti from "canvas-confetti";
 
@@ -62,18 +63,45 @@ type DrillQuestion = {
   category: string;
 };
 
-type Phase = "select" | "playing" | "lesson" | "results";
+type Phase = "select" | "playing" | "lesson" | "passage" | "results";
+
+type StackDrillSet = {
+  id: number;
+  title: string;
+  description: string;
+  subject_id: number | null;
+  level: string;
+  time_limit_minutes: number;
+  question_count: number;
+  card_type?: string;
+  capitalization_slug?: string;
+  subjectName: string;
+  mastered: boolean;
+  totalAttempts: number;
+};
+
+type LessonStack = {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  drillSets: StackDrillSet[];
+};
 
 export default function DrillPage() {
   const [phase, setPhase] = useState<Phase>("select");
   const [studentName, setStudentName] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [drillSets, setDrillSets] = useState<DrillSet[]>([]);
+  const [stacks, setStacks] = useState<LessonStack[]>([]);
+  const [expandedStackId, setExpandedStackId] = useState<number | null>(null);
   const [selectedSet, setSelectedSet] = useState<DrillSet | null>(null);
   const [questions, setQuestions] = useState<DrillQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   // True when a mastered lesson card is reopened for a fresh re-practice
   const [lessonFresh, setLessonFresh] = useState(false);
+  // Passage questions (discussion prompts, not graded)
+  const [passageQuestions, setPassageQuestions] = useState<{ id: number; question: string; instruction?: string }[]>([]);
 
   // Playing state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -99,6 +127,7 @@ export default function DrillPage() {
     setStudentName(name);
     setSchoolName(school);
     loadDrillSets();
+    loadStacks();
   }, []);
 
   useEffect(() => {
@@ -115,6 +144,14 @@ export default function DrillPage() {
       if (res.ok) setDrillSets(await res.json());
     } catch {}
     setLoading(false);
+  };
+
+  const loadStacks = async () => {
+    const name = localStorage.getItem("scholars-arena-name") || "";
+    try {
+      const res = await fetch(`/api/stacks?student_name=${encodeURIComponent(name)}`);
+      if (res.ok) setStacks(await res.json());
+    } catch {}
   };
 
   const loadQuestions = async (setId: number) => {
@@ -154,6 +191,25 @@ export default function DrillPage() {
         };
       }).filter(Boolean) as DrillQuestion[];
     } catch { return []; }
+  };
+
+  const handleStartPassage = async (set: DrillSet) => {
+    const name = studentName.trim() || localStorage.getItem("scholars-arena-name") || "Anonymous";
+    localStorage.setItem("scholars-arena-name", name);
+    setStudentName(name);
+    if (schoolName.trim()) localStorage.setItem("scholars-arena-school", schoolName.trim());
+    setSelectedSet(set);
+
+    // Load passage questions (discussion prompts)
+    const qs = await loadQuestions(set.id);
+    setPassageQuestions(
+      qs.map((q: DrillQuestion) => ({
+        id: q.id,
+        question: q.question,
+        instruction: q.instruction,
+      }))
+    );
+    setPhase("passage");
   };
 
   const handleStartLesson = (set: DrillSet, fresh = false) => {
@@ -327,6 +383,9 @@ export default function DrillPage() {
     set.card_type === "sentence_combining" ||
     set.card_type === "true_false";
 
+  const isPassageCard = (set: any) =>
+    set.card_type === "passage";
+
   const lessonBadge = (set: DrillSet) => {
     if (set.card_type === "capitalization") {
       return { label: "✍️ Capitalization", classes: "bg-violet-500/15 text-violet-300" };
@@ -339,6 +398,9 @@ export default function DrillPage() {
     }
     if (set.card_type === "true_false") {
       return { label: "⚖️ True or False", classes: "bg-emerald-500/15 text-emerald-300" };
+    }
+    if (set.card_type === "passage") {
+      return { label: "📖 Reading Passage", classes: "bg-rose-500/15 text-rose-300" };
     }
     return null;
   };
@@ -388,143 +450,309 @@ export default function DrillPage() {
           </div>
         </div>
 
-        {/* Drill Sets */}
+        {/* ── LESSON STACKS ── */}
+        {stacks.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Layers size={18} className="text-policeGold" />
+              <h2 className="text-lg font-heading font-bold text-white">Lesson Stacks</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {stacks.map((stack) => {
+                const expanded = expandedStackId === stack.id;
+                const masteredCount = stack.drillSets.filter((s) => s.mastered).length;
+                const totalCount = stack.drillSets.length;
+                const allMastered = totalCount > 0 && masteredCount === totalCount;
+
+                return (
+                  <motion.div
+                    key={stack.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`card transition-all cursor-pointer ${
+                      expanded
+                        ? "border-policeGold/50 bg-policeGold/5 shadow-[0_0_20px_rgba(255,215,0,0.1)]"
+                        : allMastered
+                          ? "border-policeGreen/20 bg-policeGreen/5 hover:border-policeGreen/30"
+                          : "hover:border-white/20 hover:bg-white/[0.07]"
+                    }`}
+                    onClick={() => setExpandedStackId(expanded ? null : stack.id)}
+                  >
+                    {/* Stack header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${
+                          allMastered
+                            ? "bg-policeGreen/20"
+                            : "bg-gradient-to-br from-policeGold/20 to-amber-600/20"
+                        }`}>
+                          {stack.icon || "📚"}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-white truncate">{stack.title}</h3>
+                          {stack.description && (
+                            <p className="text-xs text-white/50 line-clamp-1">{stack.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-white/40">
+                              {totalCount} lesson{totalCount !== 1 ? "s" : ""}
+                            </span>
+                            {totalCount > 0 && (
+                              <span className={`text-[10px] font-semibold ${
+                                allMastered ? "text-policeGreen" : "text-policeGold"
+                              }`}>
+                                {masteredCount}/{totalCount} mastered
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {allMastered && (
+                          <BadgeCheck size={16} className="text-policeGreen" />
+                        )}
+                        <ChevronDown
+                          size={16}
+                          className={`text-white/30 transition-transform ${
+                            expanded ? "rotate-180 text-policeGold" : ""
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Mastery progress bar */}
+                    {totalCount > 0 && (
+                      <div className="mt-3 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${
+                            allMastered ? "bg-policeGreen" : "bg-gradient-to-r from-policeGold to-amber-400"
+                          }`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.round((masteredCount / totalCount) * 100)}%` }}
+                          transition={{ duration: 0.5 }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Expanded lesson cards */}
+                    <AnimatePresence>
+                      {expanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-4 pt-4 border-t border-white/10 space-y-2.5">
+                            {stack.drillSets.map((set) => (
+                              <LessonSetCard
+                                key={set.id}
+                                set={set}
+                                isLessonCard={isLessonCard}
+                                isPassageCard={isPassageCard}
+                                lessonBadge={lessonBadge}
+                                onStartLesson={() => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  handleStartLesson(fullSet);
+                                }}
+                                onStartDrill={async () => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  setSelectedSet(fullSet);
+                                  await handleStartDrill(fullSet);
+                                }}
+                                onStartPassage={async () => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  await handleStartPassage(fullSet);
+                                }}
+                                startingDrill={startingDrill}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── DRILL SETS (unstacked) ── */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-4">
             <Loader2 size={32} className="text-policeGold animate-spin" />
             <p className="text-white/50 text-sm uppercase tracking-widest">Loading drill sets...</p>
           </div>
-        ) : drillSets.length === 0 ? (
+        ) : drillSets.length === 0 && stacks.length === 0 ? (
           <div className="card text-center py-16 space-y-4">
             <BookOpen size={48} className="text-white/20 mx-auto" />
             <h2 className="text-xl font-heading font-bold text-white">No Drill Sets Available</h2>
             <p className="text-white/60">No timed drills have been created yet. Check back soon!</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {drillSets.map((set, idx) => (
-              <motion.button key={set.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                onClick={() => setSelectedSet(selectedSet?.id === set.id ? null : set)}
-                className={`text-left card transition-all active:scale-[0.98] ${
-                  selectedSet?.id === set.id
-                    ? "border-policeGold/50 bg-policeGold/5 shadow-[0_0_20px_rgba(255,215,0,0.1)]"
-                    : "hover:border-white/20 hover:bg-white/[0.07]"
-                }`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
-                      set.card_type === "capitalization"
-                        ? "bg-gradient-to-br from-violet-500/20 to-indigo-500/20 text-violet-300"
-                        : set.card_type === "sentence_types"
-                          ? "bg-gradient-to-br from-teal-500/20 to-cyan-500/20 text-teal-300"
-                          : set.card_type === "sentence_combining"
-                            ? "bg-gradient-to-br from-sky-500/20 to-blue-500/20 text-sky-300"
-                            : set.card_type === "true_false"
-                              ? "bg-gradient-to-br from-emerald-500/20 to-green-500/20 text-emerald-300"
-                              : "bg-gradient-to-br from-orange-500/20 to-policeRed/20 text-orange-400"
-                    }`}>
-                      {set.title[0]}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white">{set.title}</h3>
-                      <span className="text-[10px] uppercase tracking-widest text-white/40">
-                        {set.subjectName} • {set.level.toUpperCase()}
-                      </span>
-                      {lessonBadge(set) && (
-                        <span className={`ml-2 text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full font-bold ${lessonBadge(set)!.classes}`}>
-                          {lessonBadge(set)!.label}
+        ) : drillSets.length > 0 ? (
+          <>
+            {stacks.length > 0 && (
+              <div className="flex items-center gap-2 pt-2">
+                <Zap size={18} className="text-policeRed" />
+                <h2 className="text-lg font-heading font-bold text-white">More Drills</h2>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {drillSets.map((set, idx) => (
+                <motion.button key={set.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  onClick={() => setSelectedSet(selectedSet?.id === set.id ? null : set)}
+                  className={`text-left card transition-all active:scale-[0.98] ${
+                    selectedSet?.id === set.id
+                      ? "border-policeGold/50 bg-policeGold/5 shadow-[0_0_20px_rgba(255,215,0,0.1)]"
+                      : "hover:border-white/20 hover:bg-white/[0.07]"
+                  }`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
+                        set.card_type === "capitalization"
+                          ? "bg-gradient-to-br from-violet-500/20 to-indigo-500/20 text-violet-300"
+                          : set.card_type === "sentence_types"
+                            ? "bg-gradient-to-br from-teal-500/20 to-cyan-500/20 text-teal-300"
+                            : set.card_type === "sentence_combining"
+                              ? "bg-gradient-to-br from-sky-500/20 to-blue-500/20 text-sky-300"
+                              : set.card_type === "true_false"
+                                ? "bg-gradient-to-br from-emerald-500/20 to-green-500/20 text-emerald-300"
+                              : set.card_type === "passage"
+                                ? "bg-gradient-to-br from-rose-500/20 to-pink-500/20 text-rose-300"
+                                : "bg-gradient-to-br from-orange-500/20 to-policeRed/20 text-orange-400"
+                      }`}>
+                        {set.title[0]}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white">{set.title}</h3>
+                        <span className="text-[10px] uppercase tracking-widest text-white/40">
+                          {set.subjectName} • {set.level.toUpperCase()}
                         </span>
+                        {lessonBadge(set) && (
+                          <span className={`ml-2 text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full font-bold ${lessonBadge(set)!.classes}`}>
+                            {lessonBadge(set)!.label}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className={`text-white/30 transition ${selectedSet?.id === set.id ? "rotate-90 text-policeGold" : ""}`} />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <BrainCircuit size={14} className="text-blue-400 mx-auto mb-0.5" />
+                      <p className="text-sm font-bold text-white">{set.question_count}</p>
+                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : "Sentences") : "Questions"}</p>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Clock size={14} className="text-policeGold mx-auto mb-0.5" />
+                      {isPassageCard(set) ? (
+                        <>
+                          <p className="text-sm font-bold text-white">Self</p>
+                          <p className="text-[8px] uppercase tracking-widest text-white/40">Paced</p>
+                        </>
+                      ) : isLessonCard(set) ? (
+                        <>
+                          <p className="text-sm font-bold text-white">Self</p>
+                          <p className="text-[8px] uppercase tracking-widest text-white/40">Paced</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-bold text-white">{set.time_limit_minutes}m</p>
+                          <p className="text-[8px] uppercase tracking-widest text-white/40">Target</p>
+                        </>
                       )}
                     </div>
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Trophy size={14} className="text-policeGreen mx-auto mb-0.5" />
+                      <p className="text-sm font-bold text-white">{set.totalAttempts}</p>
+                      <p className="text-[8px] uppercase tracking-widest text-white/40">Attempts</p>
+                    </div>
                   </div>
-                  <ChevronRight size={16} className={`text-white/30 transition ${selectedSet?.id === set.id ? "rotate-90 text-policeGold" : ""}`} />
-                </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <BrainCircuit size={14} className="text-blue-400 mx-auto mb-0.5" />
-                    <p className="text-sm font-bold text-white">{set.question_count}</p>
-                    <p className="text-[8px] uppercase tracking-widest text-white/40">{isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : "Sentences") : "Questions"}</p>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <Clock size={14} className="text-policeGold mx-auto mb-0.5" />
-                    {isLessonCard(set) ? (
-                      <>
-                        <p className="text-sm font-bold text-white">Self</p>
-                        <p className="text-[8px] uppercase tracking-widest text-white/40">Paced</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm font-bold text-white">{set.time_limit_minutes}m</p>
-                        <p className="text-[8px] uppercase tracking-widest text-white/40">Target</p>
-                      </>
-                    )}
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <Trophy size={14} className="text-policeGreen mx-auto mb-0.5" />
-                    <p className="text-sm font-bold text-white">{set.totalAttempts}</p>
-                    <p className="text-[8px] uppercase tracking-widest text-white/40">Attempts</p>
-                  </div>
-                </div>
+                  {set.mastered ? (
+                    <div className="text-[10px] rounded-lg px-2 py-1.5 font-semibold bg-policeGreen/10 text-policeGreen border border-policeGreen/20 flex items-center gap-1.5">
+                      <BadgeCheck size={12} /> Mastered — lesson perfected!
+                    </div>
+                  ) : set.bestAttempt && (
+                    <div className={`text-[10px] rounded-lg px-2 py-1.5 font-semibold ${
+                      set.bestAttempt.completed
+                        ? "bg-policeGreen/10 text-policeGreen border border-policeGreen/20"
+                        : "bg-policeGold/10 text-policeGold border border-policeGold/20"
+                    }`}>
+                      {set.bestAttempt.completed
+                        ? isLessonCard(set)
+                          ? <>Perfected in {set.bestAttempt.submissions ?? set.totalAttempts} {((set.bestAttempt.submissions ?? set.totalAttempts) === 1) ? "submission" : "submissions"}</>
+                          : <>Best: {set.bestAttempt.percentage}% in {formatTime(set.bestAttempt.timeSpentSeconds)} — {set.totalAttempts} {set.totalAttempts === 1 ? "try" : "tries"}</>
+                        : isLessonCard(set)
+                          ? <>In progress — {set.bestAttempt.submissions ?? 0} submission{((set.bestAttempt.submissions ?? 0) === 1) ? "" : "s"}</>
+                          : <>In progress...</>
+                      }
+                    </div>
+                  )}
 
-                {set.mastered ? (
-                  <div className="text-[10px] rounded-lg px-2 py-1.5 font-semibold bg-policeGreen/10 text-policeGreen border border-policeGreen/20 flex items-center gap-1.5">
-                    <BadgeCheck size={12} /> Mastered — lesson perfected!
-                  </div>
-                ) : set.bestAttempt && (
-                  <div className={`text-[10px] rounded-lg px-2 py-1.5 font-semibold ${
-                    set.bestAttempt.completed
-                      ? "bg-policeGreen/10 text-policeGreen border border-policeGreen/20"
-                      : "bg-policeGold/10 text-policeGold border border-policeGold/20"
-                  }`}>
-                    {set.bestAttempt.completed
-                      ? isLessonCard(set)
-                        ? <>Perfected in {set.bestAttempt.submissions ?? set.totalAttempts} {((set.bestAttempt.submissions ?? set.totalAttempts) === 1) ? "submission" : "submissions"}</>
-                        : <>Best: {set.bestAttempt.percentage}% in {formatTime(set.bestAttempt.timeSpentSeconds)} — {set.totalAttempts} {set.totalAttempts === 1 ? "try" : "tries"}</>
-                      : isLessonCard(set)
-                        ? <>In progress — {set.bestAttempt.submissions ?? 0} submission{((set.bestAttempt.submissions ?? 0) === 1) ? "" : "s"}</>
-                        : <>In progress...</>
-                    }
-                  </div>
-                )}
-
-                {selectedSet?.id === set.id && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 pt-4 border-t border-white/10">
-                    {set.description && <p className="text-xs text-white/60 mb-4">{set.description}</p>}
-                    {isLessonCard(set) ? (
-                      set.mastered ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, true); }}
-                            className="flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
-                            <RotateCcw size={15} /> Practice Again
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, false); }}
-                            className="flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition border border-white/10 text-sm">
-                            <BookOpen size={15} /> Review Lesson
-                          </button>
-                        </div>
-                      ) : (
-                        <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, false); }}
-                          className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
-                          <PencilLine size={16} /> Start Lesson
+                  {selectedSet?.id === set.id && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 pt-4 border-t border-white/10">
+                      {set.description && <p className="text-xs text-white/60 mb-4 line-clamp-3">{set.description}</p>}
+                      {isPassageCard(set) ? (
+                        <button onClick={(e) => { e.stopPropagation(); handleStartPassage(set); }}
+                          className="w-full flex items-center justify-center gap-2 bg-rose-500 text-white font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                          <BookOpen size={16} /> Read Passage
                         </button>
-                      )
-                    ) : (
-                      <button onClick={(e) => { e.stopPropagation(); handleStartDrill(set); }}
-                        disabled={startingDrill}
-                        className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm disabled:opacity-60 disabled:cursor-not-allowed">
-                        {startingDrill ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />} {startingDrill ? "Starting..." : "Start Drill"}
-                      </button>
-                    )}
-                  </motion.div>
-                )}
-              </motion.button>
-            ))}
-          </div>
-        )}
+                      ) : isLessonCard(set) ? (
+                        set.mastered ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, true); }}
+                              className="flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                              <RotateCcw size={15} /> Practice Again
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, false); }}
+                              className="flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition border border-white/10 text-sm">
+                              <BookOpen size={15} /> Review Lesson
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, false); }}
+                            className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                            <PencilLine size={16} /> Start Lesson
+                          </button>
+                        )
+                      ) : (
+                        <button onClick={(e) => { e.stopPropagation(); handleStartDrill(set); }}
+                          disabled={startingDrill}
+                          className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                          {startingDrill ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />} {startingDrill ? "Starting..." : "Start Drill"}
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
     );
   }
@@ -608,6 +836,23 @@ export default function DrillPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+    );
+  }
+
+  // ── PASSAGE CARD PHASE ──
+  if (phase === "passage" && selectedSet) {
+    return (
+      <PassageCard
+        set={selectedSet}
+        questions={passageQuestions}
+        studentName={studentName}
+        onDone={() => {
+          setPhase("select");
+          setSelectedSet(null);
+          setPassageQuestions([]);
+          loadDrillSets();
+        }}
+      />
     );
   }
 
@@ -849,4 +1094,86 @@ export default function DrillPage() {
   }
 
   return null;
+}
+
+// ── LESSON SET CARD (used inside stacks) ──
+function LessonSetCard({
+  set,
+  isLessonCard,
+  isPassageCard,
+  lessonBadge,
+  onStartLesson,
+  onStartDrill,
+  onStartPassage,
+  startingDrill,
+}: {
+  set: StackDrillSet;
+  isLessonCard: (s: any) => boolean;
+  isPassageCard: (s: any) => boolean;
+  lessonBadge: (s: any) => { label: string; classes: string } | null;
+  onStartLesson: () => void;
+  onStartDrill: () => void;
+  onStartPassage: () => void;
+  startingDrill: boolean;
+}) {
+  const badge = lessonBadge(set);
+
+  return (
+    <div
+      className={`rounded-xl border p-3.5 transition-all ${
+        set.mastered
+          ? "bg-policeGreen/10 border-policeGreen/30"
+          : "bg-white/5 border-white/10 hover:border-policeGold/30"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-bold text-white truncate">{set.title}</h4>
+            {set.mastered && <BadgeCheck size={14} className="text-policeGreen shrink-0" />}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            {badge && (
+              <span className={`text-[8px] uppercase tracking-widest px-1.5 py-0.5 rounded-full font-bold ${badge.classes}`}>
+                {badge.label}
+              </span>
+            )}
+            <span className="text-[10px] text-white/40">
+              {set.question_count} {isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : "sentences") : "questions"}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isPassageCard({ card_type: set.card_type })) {
+              onStartPassage();
+            } else if (isLessonCard({ card_type: set.card_type })) {
+              onStartLesson();
+            } else {
+              onStartDrill();
+            }
+          }}
+          disabled={startingDrill}
+          className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition ${
+            set.mastered
+              ? "bg-policeGreen/20 text-policeGreen hover:bg-policeGreen/30"
+              : "bg-policeGold text-policeBlue hover:brightness-110"
+          } disabled:opacity-60 disabled:cursor-not-allowed`}
+        >
+          {set.mastered ? (
+            <>
+              <RotateCcw size={13} />
+              {isPassageCard({ card_type: set.card_type }) ? "Read Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
+            </>
+          ) : (
+            <>
+              {isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
+              {isPassageCard({ card_type: set.card_type }) ? "Read" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
 }

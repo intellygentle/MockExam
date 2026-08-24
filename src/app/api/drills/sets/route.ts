@@ -34,6 +34,7 @@ export async function GET(req: Request) {
 
         const cardType = set.card_type || "quiz";
         const isLessonCard = cardType === "capitalization" || cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false";
+        const isPassageCard = cardType === "passage";
         // For lesson cards the item count comes from the server store
         let questionCount = set.question_count;
         if (isLessonCard) {
@@ -47,7 +48,12 @@ export async function GET(req: Request) {
         let mastered = false;
         let attemptHistory: any[] = [];
         if (studentName.trim()) {
-          if (isLessonCard) {
+          if (isPassageCard) {
+            // Passage cards are discussion-based — no automatic mastery tracking
+            totalAttempts = 0;
+            mastered = false;
+            attemptHistory = [];
+          } else if (isLessonCard) {
             // Lesson cards track attempts + retries separately
             const { data: attempts } = await supabase
               .from("capitalization_attempts")

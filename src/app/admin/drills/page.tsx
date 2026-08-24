@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import {
   PlusCircle, Trash2, Upload, Download, Loader2, Edit3, Save, X,
   Clock, Zap, Flame, BookOpen, FileText, ChevronDown, ChevronUp, PenLine,
-  Braces, Merge, Scale
+  Braces, Merge, Scale, ScrollText
 } from "lucide-react";
 
 type Subject = { id: number; name: string; department_id: number | null; level: string };
@@ -46,7 +46,7 @@ export default function AdminDrillsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
-  const [cardType, setCardType] = useState<"quiz" | "capitalization" | "sentence_types" | "sentence_combining" | "true_false">("quiz");
+  const [cardType, setCardType] = useState<"quiz" | "capitalization" | "sentence_types" | "sentence_combining" | "true_false" | "passage">("quiz");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subjectName, setSubjectName] = useState("");
@@ -56,6 +56,7 @@ export default function AdminDrillsPage() {
   const [sentenceTypesSlug, setSentenceTypesSlug] = useState("sentence-types-basics");
   const [combiningSlug, setCombiningSlug] = useState("hamilton-sentence-combining");
   const [trueFalseSlug, setTrueFalseSlug] = useState("true-false-science-facts");
+  const [passageText, setPassageText] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [expandedSet, setExpandedSet] = useState<number | null>(null);
 
@@ -97,6 +98,7 @@ export default function AdminDrillsPage() {
     setSentenceTypesSlug("sentence-types-basics");
     setCombiningSlug("hamilton-sentence-combining");
     setTrueFalseSlug("true-false-science-facts");
+    setPassageText("");
     setCsvFile(null);
     setShowForm(false);
   };
@@ -214,6 +216,35 @@ export default function AdminDrillsPage() {
     } catch { toast.error("Delete failed."); }
   };
 
+  // Create a passage card: passage text in description, questions from CSV
+  const handleCreatePassageCard = async () => {
+    if (!title.trim()) { toast.error("Title is required."); return; }
+    if (!passageText.trim()) { toast.error("Passage text is required."); return; }
+    if (!csvFile) { toast.error("Please select a CSV file with the discussion questions."); return; }
+
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", csvFile);
+      fd.append("title", title.trim());
+      fd.append("description", passageText.trim());
+      fd.append("time_limit_minutes", String(timeLimit));
+      fd.append("level", level);
+      fd.append("subject_name", subjectName.trim());
+      fd.append("card_type", "passage");
+
+      const res = await fetch("/api/drills/upload", { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!res.ok) { toast.error(data.error || "Upload failed."); return; }
+
+      toast.success(`Passage "${data.drillSet.title}" created with ${data.inserted} questions!`);
+      resetForm();
+      loadData();
+    } catch { toast.error("Upload failed."); }
+    finally { setSubmitting(false); }
+  };
+
   // Create a lesson card (no CSV needed — lesson + answers come from the
   // server-only lesson store keyed by the slug).
   const handleCreateLessonCard = async () => {
@@ -267,6 +298,7 @@ export default function AdminDrillsPage() {
       fd.append("time_limit_minutes", String(timeLimit));
       fd.append("level", level);
       fd.append("subject_name", subjectName.trim());
+      fd.append("card_type", "quiz");
 
       const res = await fetch("/api/drills/upload", { method: "POST", body: fd });
       const data = await res.json();
@@ -341,9 +373,9 @@ export default function AdminDrillsPage() {
       {showForm && (
         <div className="card space-y-5 border-orange-500/30 bg-gradient-to-br from-orange-500/5 to-policeRed/5">
           <div className="flex items-center gap-3 pb-2 border-b border-white/10">
-            {cardType === "capitalization" ? <PenLine size={22} className="text-violet-400" /> : cardType === "sentence_types" ? <Braces size={22} className="text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={22} className="text-sky-400" /> : cardType === "true_false" ? <Scale size={22} className="text-emerald-400" /> : <Zap size={22} className="text-orange-400" />}
-            <h3 className="text-lg font-heading font-bold text-orange-400">
-              {cardType === "capitalization" ? "Create Capitalization Lesson Card" : cardType === "sentence_types" ? "Create Sentence Types Lesson Card" : cardType === "sentence_combining" ? "Create Sentence Combining Lesson Card" : cardType === "true_false" ? "Create True or False Lesson Card" : "Create Timed Drill Set"}
+            {cardType === "capitalization" ? <PenLine size={22} className="text-violet-400" /> : cardType === "sentence_types" ? <Braces size={22} className="text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={22} className="text-sky-400" /> : cardType === "true_false" ? <Scale size={22} className="text-emerald-400" /> : cardType === "passage" ? <ScrollText size={22} className="text-rose-400" /> : <Zap size={22} className="text-orange-400" />}
+            <h3 className={`text-lg font-heading font-bold ${cardType === "passage" ? "text-rose-400" : "text-orange-400"}`}>
+              {cardType === "capitalization" ? "Create Capitalization Lesson Card" : cardType === "sentence_types" ? "Create Sentence Types Lesson Card" : cardType === "sentence_combining" ? "Create Sentence Combining Lesson Card" : cardType === "true_false" ? "Create True or False Lesson Card" : cardType === "passage" ? "Create Reading Passage" : "Create Timed Drill Set"}
             </h3>
           </div>
 
@@ -390,6 +422,14 @@ export default function AdminDrillsPage() {
                 }`}>
                 ⚖️ True or False
               </button>
+              <button type="button" onClick={() => setCardType("passage")}
+                className={`rounded-xl px-4 py-3 text-sm font-bold border transition ${
+                  cardType === "passage"
+                    ? "border-rose-400/60 bg-rose-500/15 text-rose-300"
+                    : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
+                }`}>
+                📖 Reading Passage
+              </button>
             </div>
           </div>
 
@@ -400,7 +440,14 @@ export default function AdminDrillsPage() {
                 placeholder={cardType === "capitalization" ? "e.g. Capitalization Basics" : "e.g. Mathematics Speed Drill"}
                 className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition" />
             </div>
-            {cardType !== "quiz" ? (
+            {cardType === "passage" ? (
+              <div>
+                <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Subject</label>
+                <input type="text" value={subjectName} onChange={(e) => setSubjectName(e.target.value)}
+                  placeholder="e.g. English (auto-created if new)"
+                  className="w-full bg-black/40 border border-white/10 focus:border-rose-400 rounded-xl px-4 py-3 text-white outline-none transition" />
+              </div>
+            ) : cardType !== "quiz" ? (
               <div>
                 <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">
                   {cardType === "capitalization" ? <PenLine size={12} className="inline mr-1 text-violet-400" /> : cardType === "sentence_types" ? <Braces size={12} className="inline mr-1 text-teal-400" /> : cardType === "sentence_combining" ? <Merge size={12} className="inline mr-1 text-sky-400" /> : <Scale size={12} className="inline mr-1 text-emerald-400" />} Lesson Slug
@@ -453,25 +500,38 @@ export default function AdminDrillsPage() {
                 min={1} max={180}
                 className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition" />
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Description (optional)</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                placeholder="What's this card about?"
-                className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition min-h-[60px]" />
-            </div>
+            {cardType === "passage" ? (
+              <div className="md:col-span-2">
+                <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">
+                  <ScrollText size={12} className="inline mr-1 text-rose-400" /> Passage Text
+                </label>
+                <textarea value={passageText} onChange={(e) => setPassageText(e.target.value)}
+                  placeholder="Paste the full reading passage here..."
+                  className="w-full bg-black/40 border border-white/10 focus:border-rose-400 rounded-xl px-4 py-3 text-white outline-none transition min-h-[240px] font-mono text-sm leading-relaxed" />
+              </div>
+            ) : (
+              <div className="md:col-span-2">
+                <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Description (optional)</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What's this card about?"
+                  className="w-full bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition min-h-[60px]" />
+              </div>
+            )}
           </div>
 
-          {cardType === "quiz" && (
+          {(cardType === "quiz" || cardType === "passage") && (
           <div>
             <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-2">
-              <span className="text-orange-400">Questions CSV</span>
+              <span className={cardType === "passage" ? "text-rose-400" : "text-orange-400"}>
+                {cardType === "passage" ? "Discussion Questions CSV" : "Questions CSV"}
+              </span>
             </label>
             <label className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-xl px-4 py-5 cursor-pointer transition ${
-              csvFile ? "border-policeGreen/50 bg-policeGreen/5" : "border-orange-400/40 hover:border-orange-400/70 bg-orange-500/5 hover:bg-orange-500/10"
+              csvFile ? "border-policeGreen/50 bg-policeGreen/5" : cardType === "passage" ? "border-rose-400/40 hover:border-rose-400/70 bg-rose-500/5 hover:bg-rose-500/10" : "border-orange-400/40 hover:border-orange-400/70 bg-orange-500/5 hover:bg-orange-500/10"
             }`}>
-              <Upload size={28} className={csvFile ? "text-policeGreen" : "text-orange-400"} />
+              <Upload size={28} className={csvFile ? "text-policeGreen" : cardType === "passage" ? "text-rose-400" : "text-orange-400"} />
               <div>
-                <span className={`text-sm font-semibold block ${csvFile ? "text-policeGreen" : "text-orange-400"}`}>
+                <span className={`text-sm font-semibold block ${csvFile ? "text-policeGreen" : cardType === "passage" ? "text-rose-400" : "text-orange-400"}`}>
                   {csvFile ? csvFile.name : "Choose CSV File"}
                 </span>
               </div>
@@ -505,14 +565,14 @@ export default function AdminDrillsPage() {
           </details>
           )}
 
-          <button onClick={cardType !== "quiz" ? handleCreateLessonCard : handleUpload} disabled={submitting}
+          <button onClick={cardType === "passage" ? handleCreatePassageCard : cardType !== "quiz" ? handleCreateLessonCard : handleUpload} disabled={submitting}
             className={`w-full py-4 rounded-xl text-white font-bold hover:brightness-110 transition flex items-center justify-center gap-2 disabled:opacity-50 ${
-              cardType === "capitalization" ? "bg-violet-500 hover:bg-violet-400" : cardType === "sentence_types" ? "bg-teal-500 hover:bg-teal-400" : cardType === "sentence_combining" ? "bg-sky-500 hover:bg-sky-400" : cardType === "true_false" ? "bg-emerald-500 hover:bg-emerald-400" : "bg-orange-500 hover:bg-orange-400"
+              cardType === "capitalization" ? "bg-violet-500 hover:bg-violet-400" : cardType === "sentence_types" ? "bg-teal-500 hover:bg-teal-400" : cardType === "sentence_combining" ? "bg-sky-500 hover:bg-sky-400" : cardType === "true_false" ? "bg-emerald-500 hover:bg-emerald-400" : cardType === "passage" ? "bg-rose-500 hover:bg-rose-400" : "bg-orange-500 hover:bg-orange-400"
             }`}>
-            {submitting ? <Loader2 size={20} className="animate-spin" /> : cardType === "capitalization" ? <PenLine size={20} /> : cardType === "sentence_types" ? <Braces size={20} /> : cardType === "sentence_combining" ? <Merge size={20} /> : cardType === "true_false" ? <Scale size={20} /> : <Zap size={20} />}
+            {submitting ? <Loader2 size={20} className="animate-spin" /> : cardType === "capitalization" ? <PenLine size={20} /> : cardType === "sentence_types" ? <Braces size={20} /> : cardType === "sentence_combining" ? <Merge size={20} /> : cardType === "true_false" ? <Scale size={20} /> : cardType === "passage" ? <ScrollText size={20} /> : <Zap size={20} />}
             {submitting
               ? "Creating Card..."
-              : (cardType === "capitalization" ? "Create Capitalization Card" : cardType === "sentence_types" ? "Create Sentence Types Card" : cardType === "sentence_combining" ? "Create Sentence Combining Card" : cardType === "true_false" ? "Create True or False Card" : "Create Drill Set")}
+              : (cardType === "capitalization" ? "Create Capitalization Card" : cardType === "sentence_types" ? "Create Sentence Types Card" : cardType === "sentence_combining" ? "Create Sentence Combining Card" : cardType === "true_false" ? "Create True or False Card" : cardType === "passage" ? "Create Reading Passage" : "Create Drill Set")}
           </button>
         </div>
       )}
@@ -565,6 +625,11 @@ export default function AdminDrillsPage() {
                       {set.card_type === "true_false" && (
                         <span className="text-[9px] font-bold uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full">
                           ⚖️ True or False
+                        </span>
+                      )}
+                      {set.card_type === "passage" && (
+                        <span className="text-[9px] font-bold uppercase tracking-widest bg-rose-500/15 text-rose-300 px-2 py-0.5 rounded-full">
+                          📖 Reading Passage
                         </span>
                       )}
                     </div>

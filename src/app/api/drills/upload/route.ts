@@ -45,6 +45,8 @@ export async function POST(req: Request) {
     const timeLimitMin = parseInt((formData.get("time_limit_minutes") as string) || "10", 10);
     const level = (formData.get("level") as string) || "ss3";
     const subjectName = (formData.get("subject_name") as string) || "";
+    const cardType = (formData.get("card_type") as string) || "quiz";
+    const isPassage = cardType === "passage";
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
@@ -142,11 +144,15 @@ export async function POST(req: Request) {
       const correctOption = row[colCorrect]?.trim();
       const explanation = row[colExplanation]?.trim();
 
-      if (!question || !option_a || !option_b || !option_c || !option_d) {
-        errors.push({ row: rowNum, message: "Missing required fields." });
+      if (!question) {
+        errors.push({ row: rowNum, message: "Missing question text." });
         continue;
       }
-      if (!["a", "b", "c", "d", "e"].includes(correctOption?.toLowerCase() || "")) {
+      if (!isPassage && (!option_a || !option_b || !option_c || !option_d)) {
+        errors.push({ row: rowNum, message: "Missing required option fields." });
+        continue;
+      }
+      if (!isPassage && !["a", "b", "c", "d", "e"].includes(correctOption?.toLowerCase() || "")) {
         errors.push({ row: rowNum, message: `Invalid correct_option "${correctOption}".` });
         continue;
       }
@@ -157,14 +163,14 @@ export async function POST(req: Request) {
         level,
         year: new Date().getFullYear(),
         question,
-        option_a,
-        option_b,
-        option_c,
-        option_d,
+        option_a: isPassage ? "" : option_a,
+        option_b: isPassage ? "" : option_b,
+        option_c: isPassage ? "" : option_c,
+        option_d: isPassage ? "" : option_d,
         option_e: option_e || "",
         passage: passage || "",
         instruction: instruction || "",
-        correct_option: correctOption.toLowerCase(),
+        correct_option: isPassage ? "a" : correctOption.toLowerCase(),
         explanation: explanation || "",
       });
     }
@@ -193,6 +199,7 @@ export async function POST(req: Request) {
         level,
         time_limit_minutes: timeLimitMin,
         question_count: insertedQuestions.length,
+        card_type: cardType,
       })
       .select()
       .single();
