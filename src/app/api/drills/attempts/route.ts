@@ -161,7 +161,7 @@ export async function GET(req: Request) {
 
       // ── Lesson cards: analytics from capitalization_attempts ──
       const drillCardType = drillSet?.card_type || "quiz";
-      const isLessonCard = drillCardType === "capitalization" || drillCardType === "sentence_types" || drillCardType === "sentence_combining" || drillCardType === "true_false";
+      const isLessonCard = drillCardType === "capitalization" || drillCardType === "sentence_types" || drillCardType === "sentence_combining" || drillCardType === "true_false" || drillCardType === "combine_seq";
       if (drillSet && isLessonCard) {
         const cardDef = getLessonCard(drillCardType, drillSet.capitalization_slug);
         const lineCount = cardDef ? cardDef.questions.length : drillSet.question_count || 1;
@@ -482,7 +482,7 @@ export async function GET(req: Request) {
       (allSets || []).map(async (set: any) => {
         const setCardType = set.card_type || "quiz";
         // Lesson cards track attempts + retries in their own tables
-        if (setCardType === "capitalization" || setCardType === "sentence_types" || setCardType === "sentence_combining" || setCardType === "true_false") {
+        if (setCardType === "capitalization" || setCardType === "sentence_types" || setCardType === "sentence_combining" || setCardType === "true_false" || setCardType === "combine_seq") {
           const cardDef = getLessonCard(setCardType, set.capitalization_slug);
           const lineCount = cardDef ? cardDef.questions.length : set.question_count || 1;
           const { data: attempts } = await supabase

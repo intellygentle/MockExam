@@ -1,0 +1,2 @@
+ALTER TABLE drill_sets DROP CONSTRAINT IF EXISTS drill_sets_card_type_check;
+ALTER TABLE drill_sets ADD CONSTRAINT drill_sets_card_type_check CHECK (card_type = ANY (ARRAY['quiz','capitalization','sentence_types','sentence_combining','true_false','passage','vocabulary','combine_seq']));

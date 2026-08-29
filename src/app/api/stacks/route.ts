@@ -61,7 +61,8 @@ export async function GET(req: Request) {
               cardType === "capitalization" ||
               cardType === "sentence_types" ||
               cardType === "sentence_combining" ||
-              cardType === "true_false";
+              cardType === "true_false" ||
+              cardType === "combine_seq";
             const isPassageCard = cardType === "passage";
             const isVocabCard = cardType === "vocabulary";
 

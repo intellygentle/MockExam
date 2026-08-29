@@ -1,5 +1,6 @@
 import "server-only";
 import { getCapitalizationCard, checkLine, type LessonBlock } from "./capitalization-cards";
+import { clauseCombiningCard } from "./clause-combining-card";
 
 /**
  * ============================================================
@@ -39,6 +40,19 @@ export type CombineRubric = {
   hintConnector: string;
 };
 
+/** Rubric for "combine_seq" (one-at-a-time typed combining) cards. */
+export type CombineSeqRubric = {
+  /** The subordinating conjunction the student MUST use (lowercase). */
+  conjunction: string;
+  /** True when the conjunction is attached to the FIRST sentence, so the
+   *  combined sentence must START with the conjunction (dependent clause
+   *  first, comma after it). False when the first sentence stays the main
+   *  clause and the conjunction appears later. */
+  lead: boolean;
+  /** Key content words (lowercase) from both sentences that must survive. */
+  requiredTokens: string[];
+};
+
 /** A single practice item inside a lesson card. */
 export type LessonQuestion = {
   /** The sentence shown to the student (uncapitalized for capitalize cards). */
@@ -52,9 +66,11 @@ export type LessonQuestion = {
   source?: string;
   /** Rubric used to grade combine (rewrite) cards. */
   rubric?: CombineRubric;
+  /** Rubric used to grade combine_seq (one-at-a-time typed combining) cards. */
+  seqRubric?: CombineSeqRubric;
 };
 
-export type CardKind = "capitalize" | "classify" | "combine" | "true_false";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq";
 
 export type LessonCardDef = {
   slug: string;
@@ -77,6 +93,54 @@ export function normalizeClassification(text: string): string {
 /** Collapse whitespace + lowercase (used for token matching). */
 function normalizeText(text: string): string {
   return (text || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Loose, case-insensitive whole-word match that tolerates common verb
+ * inflections. For "rise" it also accepts "rises/rose/rising/rised", for a
+ * plural noun like "prices" it accepts "price". This lets genuinely
+ * reworded combine_seq answers pass while still requiring every key fact.
+ */
+function textHasToken(text: string, tokenRaw: string): boolean {
+  const token = tokenRaw.toLowerCase().trim();
+  if (!token) return false;
+  const variants = new Set<string>();
+  variants.add(token);
+  variants.add(token + "s");
+  variants.add(token + "es");
+  variants.add(token + "ed");
+  variants.add(token + "d");
+  variants.add(token + "ing");
+  // strip a trailing 'e' to fold rise/raise-style verb forms
+  if (token.endsWith("e")) {
+    const stem = token.slice(0, -1);
+    variants.add(stem + "s");
+    variants.add(stem + "d");
+    variants.add(stem + "ing");
+  }
+  // if the token itself is plural, also accept the singular
+  if (token.endsWith("es")) variants.add(token.slice(0, -2));
+  else if (token.endsWith("s")) variants.add(token.slice(0, -1));
+  // irregular quick-map (increase/rose/etc.) handled implicitly by 
+  // requiring at least one variant; add a few common irregulars
+  const irregular: Record<string, string[]> = {
+    rise: ["rose", "risen", "rising", "rises"],
+    fall: ["fell", "fallen"],
+    drop: ["dropped", "dropping", "drops"],
+    pay: ["paid", "paying", "pays"],
+    make: ["made", "making", "makes"],
+    see: ["saw", "seen", "sees"],
+    decline: ["declined", "declining", "declines"],
+  };
+  if (irregular[token]) irregular[token].forEach((v) => variants.add(v));
+
+  // build a regex that matches any variant as a whole word (only first word
+  // of multi-word tokens is used for the boundary — safe for our content words)
+  const pattern = Array.from(variants)
+    .sort((a, b) => b.length - a.length)
+    .map((v) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  return new RegExp(`\\b(?:${pattern})\\b`).test(text);
 }
 
 /**
@@ -149,7 +213,64 @@ export function gradeCombine(studentText: string, question: LessonQuestion): { c
 }
 
 /**
- * Grade one question, returning both the verdict and the hints to show.
+ * Grade one combine_seq (typed one-at-a-time combining) answer.
+ * Accepts the docx's own model answer AND any genuinely equivalent rewrite,
+ * as long as: (1) every key content token from both sentences survives, (2)
+ * the required subordinating conjunction is used, (3) the dependent clause
+ * is placed per the instruction (leading order + comma rule), and (4) it
+ * stays a single sentence.
+ */
+export function gradeCombineSeq(studentText: string, question: LessonQuestion): { correct: boolean; hints: string[] } {
+  const rubric = question.seqRubric;
+  if (!rubric) return { correct: false, hints: question.hints };
+
+  const text = normalizeText(studentText);
+  const hints: string[] = [];
+  const conj = rubric.conjunction.toLowerCase();
+
+  // 1. Content — every key fact must survive (word-form tolerant)
+  const missing = rubric.requiredTokens.filter((t) => !textHasToken(text, t));
+  if (missing.length > 0) {
+    hints.push(
+      `Your combined sentence is missing key information — make sure both parts survive. It should still include: ${missing.join(", ")}. Combine, never delete facts.`
+    );
+  }
+
+  // 2. Require the specified subordinating conjunction
+  if (!text.includes(conj)) {
+    hints.push(`You must join the two ideas using the subordinating conjunction “${rubric.conjunction}”.`);
+  }
+
+  // 3. Clause order + comma rule
+  const startsWithConj = text.startsWith(conj + " ") || text === conj;
+  if (rubric.lead) {
+    if (!startsWithConj) {
+      hints.push(
+        `The instruction says to attach the conjunction to the FIRST sentence — so start your combined sentence with “${rubric.conjunction}” (dependent clause first).`
+      );
+    } else if (!text.includes(",")) {
+      hints.push(
+        `When the dependent clause comes first, put a comma after it before the main clause (e.g. “${rubric.conjunction[0].toUpperCase()}${rubric.conjunction.slice(1)}, …”).`
+      );
+    }
+  } else if (startsWithConj) {
+    hints.push(
+      `Keep the first sentence as your main clause — don't begin the whole sentence with “${rubric.conjunction}”. Place the dependent clause after the main clause.`
+    );
+  }
+
+  // 4. Single sentence
+  const sentenceCount = countSentences(text);
+  if (sentenceCount > 1) {
+    hints.push(
+      `This reads as ${sentenceCount} separate sentences — join the two ideas into ONE sentence using “${rubric.conjunction}”.`
+    );
+  }
+
+  return { correct: hints.length === 0, hints };
+}
+
+/** Grade one question, returning both the verdict and the hints to show.
  * For combine cards the hints are generated per failed rubric check.
  */
 export function gradeQuestionWithHints(
@@ -159,6 +280,9 @@ export function gradeQuestionWithHints(
 ): { correct: boolean; hints: string[] } {
   const question = card.questions[index];
   if (!question) return { correct: false, hints: [] };
+  if (card.kind === "combine_seq") {
+    return gradeCombineSeq(studentText, question);
+  }
   if (card.kind === "capitalize") {
     const correct = checkLine(studentText, {
       prompt: question.prompt,
@@ -199,7 +323,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -769,6 +893,8 @@ const CARDS: Record<string, LessonCardDef> = {
       },
     ],
   },
+
+  [clauseCombiningCard.slug]: clauseCombiningCard,
 
   // ════════════════════════════════════════════════════════════════
   // True or False (true_false kind) — chip-selection cards.

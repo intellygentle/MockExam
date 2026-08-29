@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     }
 
     const cardType = set.card_type || "quiz";
-    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false") {
+    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq") {
       return NextResponse.json({ error: "This drill set is not a lesson card" }, { status: 400 });
     }
 

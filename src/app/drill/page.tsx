@@ -14,6 +14,7 @@ import QuestionCard from "@/components/QuestionCard";
 import LessonCard from "@/components/LessonCard";
 import PassageCard from "@/components/PassageCard";
 import VocabularyCard from "@/components/VocabularyCard";
+import CombineCard from "@/components/CombineCard";
 import type { OptionKey, OptionsRecord } from "@/lib/questions";
 import confetti from "canvas-confetti";
 
@@ -37,6 +38,7 @@ type DrillSet = {
   question_count: number;
   card_type?: string;
   capitalization_slug?: string;
+  lesson_content?: string;
   subjectName: string;
   mastered: boolean;
   attemptHistory: DrillAttemptHistory[];
@@ -64,7 +66,7 @@ type DrillQuestion = {
   category: string;
 };
 
-type Phase = "select" | "playing" | "lesson" | "passage" | "vocabulary" | "results";
+type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "results";
 
 type StackDrillSet = {
   id: number;
@@ -76,6 +78,7 @@ type StackDrillSet = {
   question_count: number;
   card_type?: string;
   capitalization_slug?: string;
+  lesson_content?: string;
   subjectName: string;
   mastered: boolean;
   totalAttempts: number;
@@ -93,6 +96,7 @@ export default function DrillPage() {
   const [phase, setPhase] = useState<Phase>("select");
   const [studentName, setStudentName] = useState("");
   const [schoolName, setSchoolName] = useState("");
+  const [nameSaved, setNameSaved] = useState(false);
   const [drillSets, setDrillSets] = useState<DrillSet[]>([]);
   const [stacks, setStacks] = useState<LessonStack[]>([]);
   const [expandedStackId, setExpandedStackId] = useState<number | null>(null);
@@ -129,6 +133,7 @@ export default function DrillPage() {
     const school = localStorage.getItem("scholars-arena-school") || "";
     setStudentName(name);
     setSchoolName(school);
+    if (name) setNameSaved(true);
     loadDrillSets();
     loadStacks();
   }, []);
@@ -242,6 +247,15 @@ export default function DrillPage() {
     setSelectedSet(set);
     setLessonFresh(fresh);
     setPhase("lesson");
+  };
+
+  const handleStartCombine = (set: DrillSet) => {
+    const name = studentName.trim() || localStorage.getItem("scholars-arena-name") || "Anonymous";
+    localStorage.setItem("scholars-arena-name", name);
+    setStudentName(name);
+    if (schoolName.trim()) localStorage.setItem("scholars-arena-school", schoolName.trim());
+    setSelectedSet(set);
+    setPhase("combine");
   };
 
   const handleStartDrill = async (setOverride?: DrillSet | null) => {
@@ -403,7 +417,11 @@ export default function DrillPage() {
     set.card_type === "capitalization" ||
     set.card_type === "sentence_types" ||
     set.card_type === "sentence_combining" ||
-    set.card_type === "true_false";
+    set.card_type === "true_false" ||
+    set.card_type === "combine_seq";
+
+  const isCombineSeqCard = (set: any) =>
+    set.card_type === "combine_seq";
 
   const isPassageCard = (set: any) =>
     set.card_type === "passage";
@@ -420,6 +438,9 @@ export default function DrillPage() {
     }
     if (set.card_type === "sentence_combining") {
       return { label: "🔗 Sentence Combining", classes: "bg-sky-500/15 text-sky-300" };
+    }
+    if (set.card_type === "combine_seq") {
+      return { label: "✍️ Sentence Combining", classes: "bg-sky-500/15 text-sky-300" };
     }
     if (set.card_type === "true_false") {
       return { label: "⚖️ True or False", classes: "bg-emerald-500/15 text-emerald-300" };
@@ -456,7 +477,7 @@ export default function DrillPage() {
         </motion.div>
 
         {/* Name section */}
-        {!studentName && (
+        {!nameSaved && !studentName.trim() && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card space-y-4">
             <div className="flex items-center gap-2">
               <User size={18} className="text-policeGold" />
@@ -472,6 +493,17 @@ export default function DrillPage() {
                 placeholder="School (optional)"
                 className="flex-1 bg-black/40 border border-white/10 focus:border-policeGold rounded-xl px-4 py-3 text-white outline-none transition" />
             </div>
+            <button
+              onClick={() => {
+                if (!studentName.trim()) return;
+                localStorage.setItem("scholars-arena-name", studentName.trim());
+                localStorage.setItem("scholars-arena-school", schoolName.trim());
+                setNameSaved(true);
+              }}
+              disabled={!studentName.trim()}
+              className="w-full py-2.5 rounded-xl bg-policeGold text-policeBlue font-bold hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+              Save Name
+            </button>
           </motion.div>
         )}
 
@@ -585,6 +617,7 @@ export default function DrillPage() {
                                 isLessonCard={isLessonCard}
                                 isPassageCard={isPassageCard}
                                 isVocabCard={isVocabCard}
+                                isCombineSeqCard={isCombineSeqCard}
                                 lessonBadge={lessonBadge}
                                 onStartLesson={() => {
                                   const fullSet: DrillSet = {
@@ -595,6 +628,16 @@ export default function DrillPage() {
                                     created_at: "",
                                   };
                                   handleStartLesson(fullSet);
+                                }}
+                                onStartCombine={() => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  handleStartCombine(fullSet);
                                 }}
                                 onStartDrill={async () => {
                                   const fullSet: DrillSet = {
@@ -779,7 +822,12 @@ export default function DrillPage() {
                           <BookOpen size={16} /> Read Passage
                         </button>
                       ) : isLessonCard(set) ? (
-                        set.mastered ? (
+                        isCombineSeqCard(set) ? (
+                          <button onClick={(e) => { e.stopPropagation(); handleStartCombine(set); }}
+                            className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                            <PencilLine size={16} /> Start Combining
+                          </button>
+                        ) : set.mastered ? (
                           <div className="grid grid-cols-2 gap-2">
                             <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, true); }}
                               className="flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
@@ -898,11 +946,20 @@ export default function DrillPage() {
 
   // ── VOCABULARY CARD PHASE ──
   if (phase === "vocabulary" && selectedSet) {
+    // Parse gapfill chunks from lesson_content JSON
+    let gapChunks: { text: string; gapWord: string | null }[] | undefined;
+    try {
+      if (selectedSet.lesson_content) {
+        gapChunks = JSON.parse(selectedSet.lesson_content);
+      }
+    } catch { /* no gapfill */ }
+
     return (
       <VocabularyCard
         set={selectedSet}
         words={vocabWords}
         studentName={studentName}
+        gapChunks={gapChunks}
         onDone={() => {
           setPhase("select");
           setSelectedSet(null);
@@ -943,6 +1000,22 @@ export default function DrillPage() {
           setPhase("select");
           setSelectedSet(null);
           setLessonFresh(false);
+          loadDrillSets();
+        }}
+      />
+    );
+  }
+
+  // ── COMBINE CARD PHASE ──
+  if (phase === "combine" && selectedSet) {
+    return (
+      <CombineCard
+        key={selectedSet.id}
+        set={selectedSet}
+        studentName={studentName}
+        onDone={() => {
+          setPhase("select");
+          setSelectedSet(null);
           loadDrillSets();
         }}
       />
@@ -1176,8 +1249,10 @@ function LessonSetCard({
   isLessonCard,
   isPassageCard,
   isVocabCard,
+  isCombineSeqCard,
   lessonBadge,
   onStartLesson,
+  onStartCombine,
   onStartDrill,
   onStartPassage,
   onStartVocab,
@@ -1187,8 +1262,10 @@ function LessonSetCard({
   isLessonCard: (s: any) => boolean;
   isPassageCard: (s: any) => boolean;
   isVocabCard: (s: any) => boolean;
+  isCombineSeqCard: (s: any) => boolean;
   lessonBadge: (s: any) => { label: string; classes: string } | null;
   onStartLesson: () => void;
+  onStartCombine: () => void;
   onStartDrill: () => void;
   onStartPassage: () => void;
   onStartVocab: () => void;
@@ -1228,6 +1305,8 @@ function LessonSetCard({
               onStartVocab();
             } else if (isPassageCard({ card_type: set.card_type })) {
               onStartPassage();
+            } else if (isCombineSeqCard({ card_type: set.card_type })) {
+              onStartCombine();
             } else if (isLessonCard({ card_type: set.card_type })) {
               onStartLesson();
             } else {
@@ -1244,12 +1323,12 @@ function LessonSetCard({
           {set.mastered ? (
             <>
               <RotateCcw size={13} />
-              {isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
+              {isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isLessonCard({ card_type: set.card_type }) ? (isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : "Practice") : "Retake"}
             </>
           ) : (
             <>
               {isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
-              {isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
+              {isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isLessonCard({ card_type: set.card_type }) ? (isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : "Start") : "Drill"}
             </>
           )}
         </button>
