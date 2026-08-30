@@ -62,7 +62,11 @@ export async function GET(req: Request) {
               cardType === "sentence_types" ||
               cardType === "sentence_combining" ||
               cardType === "true_false" ||
-              cardType === "combine_seq";
+              cardType === "combine_seq" ||
+              cardType === "error_correction" ||
+              cardType === "para_gapfill" ||
+              cardType === "sentence_expansion" ||
+              cardType === "sentence_expansion_mcq";
             const isPassageCard = cardType === "passage";
             const isVocabCard = cardType === "vocabulary";
 

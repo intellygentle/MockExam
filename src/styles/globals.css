@@ -10,14 +10,47 @@
   --police-gold: #ffd700;
   --police-green: #28a745;
   --police-red: #dc3545;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   font-family: var(--font-inter), "Inter", sans-serif;
   background: linear-gradient(180deg, #000 0%, #030712 60%, #050b1a 100%);
   min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: var(--safe-area-bottom);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remove tap highlight on interactive elements */
+button, a, input, textarea, select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smoother scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent horizontal overflow from framer-motion animations */
+.overflow-hidden {
+  overflow: hidden !important;
 }
 
 .card {
-  @apply bg-white/5 border border-white/10 shadow-xl shadow-black/40 rounded-3xl p-6;
+  @apply bg-white/5 border border-white/10 shadow-xl shadow-black/40 rounded-3xl p-4 sm:p-6;
+}
+
+/* Mobile: tighter card padding */
+@media (max-width: 640px) {
+  .card {
+    border-radius: 1.25rem;
+  }
 }

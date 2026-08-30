@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     }
 
     const cardType = set.card_type || "quiz";
-    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq") {
+    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq") {
       return NextResponse.json({ error: "This drill set is not a lesson card" }, { status: 400 });
     }
 
@@ -66,7 +66,13 @@ export async function GET(req: Request) {
       title: card.title,
       description: card.description || set.description || "",
       lesson: card.lesson,
-      items: card.questions.map((q) => ({ prompt: q.prompt, source: q.source || "" })),
+      items: card.questions.map((q) => ({
+        prompt: q.prompt,
+        source: q.source || "",
+        paraGapfill: q.paraGapfill || null,
+        mcqOptions: q.mcqOptions || null,
+        sentenceExpansion: q.sentenceExpansion || null,
+      })),
       lineCount: card.questions.length,
       attempt: attempt
         ? {

@@ -8,13 +8,15 @@ import {
   Loader2, RotateCcw, BookOpen, BrainCircuit,
   Hourglass, Flame, Sparkles, ChevronRight, ChevronDown,
   TrendingUp, TrendingDown, Minus, BadgeCheck, PencilLine,
-  Layers, type LucideIcon
+  Layers, PenLine, type LucideIcon
 } from "lucide-react";
 import QuestionCard from "@/components/QuestionCard";
 import LessonCard from "@/components/LessonCard";
 import PassageCard from "@/components/PassageCard";
 import VocabularyCard from "@/components/VocabularyCard";
 import CombineCard from "@/components/CombineCard";
+import ParaGapfillCard from "@/components/ParaGapfillCard";
+import SentenceExpansionCard from "@/components/SentenceExpansionCard";
 import type { OptionKey, OptionsRecord } from "@/lib/questions";
 import confetti from "canvas-confetti";
 
@@ -66,7 +68,7 @@ type DrillQuestion = {
   category: string;
 };
 
-type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "results";
+type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "para_gapfill" | "sentence_expansion" | "results";
 
 type StackDrillSet = {
   id: number;
@@ -258,6 +260,24 @@ export default function DrillPage() {
     setPhase("combine");
   };
 
+  const handleStartParaGapfill = (set: DrillSet) => {
+    const name = studentName.trim() || localStorage.getItem("scholars-arena-name") || "Anonymous";
+    localStorage.setItem("scholars-arena-name", name);
+    setStudentName(name);
+    if (schoolName.trim()) localStorage.setItem("scholars-arena-school", schoolName.trim());
+    setSelectedSet(set);
+    setPhase("para_gapfill");
+  };
+
+  const handleStartSentenceExpansion = (set: DrillSet) => {
+    const name = studentName.trim() || localStorage.getItem("scholars-arena-name") || "Anonymous";
+    localStorage.setItem("scholars-arena-name", name);
+    setStudentName(name);
+    if (schoolName.trim()) localStorage.setItem("scholars-arena-school", schoolName.trim());
+    setSelectedSet(set);
+    setPhase("sentence_expansion");
+  };
+
   const handleStartDrill = async (setOverride?: DrillSet | null) => {
     const set = setOverride ?? selectedSet;
     if (!set || startingDrill) return;
@@ -418,16 +438,32 @@ export default function DrillPage() {
     set.card_type === "sentence_types" ||
     set.card_type === "sentence_combining" ||
     set.card_type === "true_false" ||
-    set.card_type === "combine_seq";
+    set.card_type === "combine_seq" ||
+    set.card_type === "error_correction" ||
+    set.card_type === "para_gapfill" ||
+    set.card_type === "sentence_expansion" ||
+    set.card_type === "sentence_expansion_mcq";
 
   const isCombineSeqCard = (set: any) =>
     set.card_type === "combine_seq";
+
+  const isErrorCorrectionCard = (set: any) =>
+    set.card_type === "error_correction";
 
   const isPassageCard = (set: any) =>
     set.card_type === "passage";
 
   const isVocabCard = (set: any) =>
     set.card_type === "vocabulary";
+
+  const isParaGapfillCard = (set: any) =>
+    set.card_type === "para_gapfill";
+
+  const isSentenceExpansionCard = (set: any) =>
+    set.card_type === "sentence_expansion";
+
+  const isSentenceExpansionMcqCard = (set: any) =>
+    set.card_type === "sentence_expansion_mcq";
 
   const lessonBadge = (set: DrillSet) => {
     if (set.card_type === "capitalization") {
@@ -441,6 +477,18 @@ export default function DrillPage() {
     }
     if (set.card_type === "combine_seq") {
       return { label: "✍️ Sentence Combining", classes: "bg-sky-500/15 text-sky-300" };
+    }
+    if (set.card_type === "error_correction") {
+      return { label: "✏️ Error Correction", classes: "bg-orange-500/15 text-orange-300" };
+    }
+    if (set.card_type === "para_gapfill") {
+      return { label: "📝 Paragraph Gap-Fill", classes: "bg-indigo-500/15 text-indigo-300" };
+    }
+    if (set.card_type === "sentence_expansion") {
+      return { label: "✍️ Sentence Writing", classes: "bg-emerald-500/15 text-emerald-300" };
+    }
+    if (set.card_type === "sentence_expansion_mcq") {
+      return { label: "📝 Sentence MCQ", classes: "bg-teal-500/15 text-teal-300" };
     }
     if (set.card_type === "true_false") {
       return { label: "⚖️ True or False", classes: "bg-emerald-500/15 text-emerald-300" };
@@ -468,10 +516,10 @@ export default function DrillPage() {
           <div className="inline-flex p-4 bg-gradient-to-br from-policeRed/20 to-orange-600/20 rounded-full border border-policeRed/20">
             <Flame size={40} className="text-orange-400" />
           </div>
-          <h1 className="text-4xl sm:text-5xl font-heading font-bold text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold text-white tracking-tight">
             The Arena
           </h1>
-          <p className="text-white/50 text-lg max-w-xl mx-auto">
+          <p className="text-white/50 text-base sm:text-lg max-w-xl mx-auto px-2">
             Timed drill practice. Complete each set before the clock runs out and track your speed!
           </p>
         </motion.div>
@@ -483,7 +531,7 @@ export default function DrillPage() {
               <User size={18} className="text-policeGold" />
               <h2 className="text-lg font-heading font-bold text-white">Who are you?</h2>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input type="text" value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="Your nickname..."
@@ -523,7 +571,7 @@ export default function DrillPage() {
               <Layers size={18} className="text-policeGold" />
               <h2 className="text-lg font-heading font-bold text-white">Lesson Stacks</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {stacks.map((stack) => {
                 const expanded = expandedStackId === stack.id;
                 const masteredCount = stack.drillSets.filter((s) => s.mastered).length;
@@ -618,6 +666,10 @@ export default function DrillPage() {
                                 isPassageCard={isPassageCard}
                                 isVocabCard={isVocabCard}
                                 isCombineSeqCard={isCombineSeqCard}
+                                isErrorCorrectionCard={isErrorCorrectionCard}
+                                isParaGapfillCard={isParaGapfillCard}
+                                isSentenceExpansionCard={isSentenceExpansionCard}
+                                isSentenceExpansionMcqCard={isSentenceExpansionMcqCard}
                                 lessonBadge={lessonBadge}
                                 onStartLesson={() => {
                                   const fullSet: DrillSet = {
@@ -638,6 +690,26 @@ export default function DrillPage() {
                                     created_at: "",
                                   };
                                   handleStartCombine(fullSet);
+                                }}
+                                onStartParaGapfill={() => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  handleStartParaGapfill(fullSet);
+                                }}
+                                onStartSentenceExpansion={() => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  handleStartSentenceExpansion(fullSet);
                                 }}
                                 onStartDrill={async () => {
                                   const fullSet: DrillSet = {
@@ -704,7 +776,7 @@ export default function DrillPage() {
                 <h2 className="text-lg font-heading font-bold text-white">More Drills</h2>
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
               {unstackedDrillSets.map((set, idx) => (
                 <motion.button key={set.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -813,41 +885,51 @@ export default function DrillPage() {
                       {set.description && <p className="text-xs text-white/60 mb-4 line-clamp-3">{set.description}</p>}
                       {isVocabCard(set) ? (
                         <button onClick={(e) => { e.stopPropagation(); handleStartVocab(set); }}
-                          className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                          className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm">
                           <BookOpen size={16} /> Study Vocabulary
                         </button>
                       ) : isPassageCard(set) ? (
                         <button onClick={(e) => { e.stopPropagation(); handleStartPassage(set); }}
-                          className="w-full flex items-center justify-center gap-2 bg-rose-500 text-white font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                          className="w-full flex items-center justify-center gap-2 bg-rose-500 text-white font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm">
                           <BookOpen size={16} /> Read Passage
                         </button>
                       ) : isLessonCard(set) ? (
-                        isCombineSeqCard(set) ? (
+                        isSentenceExpansionCard(set) ? (
+                          <button onClick={(e) => { e.stopPropagation(); handleStartSentenceExpansion(set); }}
+                            className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm">
+                            <PenLine size={16} /> Write Sentences
+                          </button>
+                        ) : isParaGapfillCard(set) ? (
+                          <button onClick={(e) => { e.stopPropagation(); handleStartParaGapfill(set); }}
+                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm">
+                            <PencilLine size={16} /> Fill Blanks
+                          </button>
+                        ) : isCombineSeqCard(set) || isSentenceExpansionMcqCard(set) ? (
                           <button onClick={(e) => { e.stopPropagation(); handleStartCombine(set); }}
-                            className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                            className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm">
                             <PencilLine size={16} /> Start Combining
                           </button>
                         ) : set.mastered ? (
                           <div className="grid grid-cols-2 gap-2">
                             <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, true); }}
-                              className="flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                              className="flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm">
                               <RotateCcw size={15} /> Practice Again
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, false); }}
-                              className="flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition border border-white/10 text-sm">
+                              className="flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-2.5 sm:py-3 rounded-xl hover:bg-white/20 transition border border-white/10 text-xs sm:text-sm">
                               <BookOpen size={15} /> Review Lesson
                             </button>
                           </div>
                         ) : (
                           <button onClick={(e) => { e.stopPropagation(); handleStartLesson(set, false); }}
-                            className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm">
+                            className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm">
                             <PencilLine size={16} /> Start Lesson
                           </button>
                         )
                       ) : (
                         <button onClick={(e) => { e.stopPropagation(); handleStartDrill(set); }}
                           disabled={startingDrill}
-                          className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 rounded-xl hover:brightness-110 transition text-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                          className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed">
                           {startingDrill ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />} {startingDrill ? "Starting..." : "Start Drill"}
                         </button>
                       )}
@@ -873,23 +955,23 @@ export default function DrillPage() {
     return (
       <div className="space-y-6 pb-10">
         {/* Timer & Stats Bar */}
-        <div className="sticky top-0 z-30 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 -mx-4 px-4 py-3">
-          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xs uppercase tracking-widest bg-white/10 px-2 py-1 rounded-full text-white/50">
+        <div className="sticky top-0 z-30 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 -mx-4 px-3 sm:px-4 py-2.5 sm:py-3">
+          <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-x-2 sm:gap-x-3 gap-y-1.5 sm:gap-y-2">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <span className="text-[10px] sm:text-xs uppercase tracking-widest bg-white/10 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-white/50">
                 Q {currentIndex + 1}/{questions.length}
               </span>
-              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ${timeStatus.bg}`}>
+              <div className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 ${timeStatus.bg}`}>
                 <timeStatus.icon size={14} className={timeStatus.color} />
-                <span className={`text-sm font-bold font-mono ${timeStatus.color}`}>{formatTime(elapsedSeconds)}</span>
+                <span className={`text-xs sm:text-sm font-bold font-mono ${timeStatus.color}`}>{formatTime(elapsedSeconds)}</span>
                 {targetSeconds > 0 && (
-                  <span className={`text-xs ${isOverTime ? "text-policeRed/60" : "text-white/40"}`}>/ {formatTime(targetSeconds)}</span>
+                  <span className={`text-[10px] sm:text-xs ${isOverTime ? "text-policeRed/60" : "text-white/40"}`}>/ {formatTime(targetSeconds)}</span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-policeGreen font-semibold bg-policeGreen/10 px-2 py-1 rounded-full">{correctCount} correct</span>
-              <span className="text-xs uppercase tracking-widest bg-white/10 px-2 py-1 rounded-full text-white/50">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-[10px] sm:text-xs text-policeGreen font-semibold bg-policeGreen/10 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">{correctCount} correct</span>
+              <span className="hidden md:inline-flex text-xs uppercase tracking-widest bg-white/10 px-2 py-1 rounded-full text-white/50 truncate max-w-[220px]">
                 {selectedSet?.title}
               </span>
             </div>
@@ -1022,6 +1104,38 @@ export default function DrillPage() {
     );
   }
 
+  // ── PARA GAPFILL PHASE ──
+  if (phase === "para_gapfill" && selectedSet) {
+    return (
+      <ParaGapfillCard
+        key={selectedSet.id}
+        set={selectedSet}
+        studentName={studentName}
+        onDone={() => {
+          setPhase("select");
+          setSelectedSet(null);
+          loadDrillSets();
+        }}
+      />
+    );
+  }
+
+  // ── SENTENCE EXPANSION PHASE ──
+  if (phase === "sentence_expansion" && selectedSet) {
+    return (
+      <SentenceExpansionCard
+        key={selectedSet.id}
+        set={selectedSet}
+        studentName={studentName}
+        onDone={() => {
+          setPhase("select");
+          setSelectedSet(null);
+          loadDrillSets();
+        }}
+      />
+    );
+  }
+
   // ── RESULTS PHASE ──
   if (phase === "results") {
     const total = questions.length;
@@ -1099,7 +1213,7 @@ export default function DrillPage() {
             </div>
 
             {/* Correct / Missed breakdown */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
               <div className="bg-policeGreen/5 rounded-xl p-4 border border-policeGreen/20">
                 <p className="text-[9px] uppercase tracking-widest text-white/50 mb-1">✓ Correct</p>
                 <p className="text-2xl font-bold text-policeGreen">{correctCount}/{total}</p>
@@ -1210,12 +1324,12 @@ export default function DrillPage() {
                 <>
                   <button onClick={goAllDrills}
                     disabled={startingDrill}
-                    className="flex-1 flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-4 rounded-xl hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed">
+                    className="flex-1 flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 sm:py-4 rounded-xl hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed text-xs sm:text-sm">
                     <ArrowLeft size={18} /> All Drills
                   </button>
                   <button onClick={() => handleStartDrill(selectedSet)}
                     disabled={startingDrill}
-                    className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-4 rounded-xl hover:bg-white/20 transition border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed">
+                    className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-3 sm:py-4 rounded-xl hover:bg-white/20 transition border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed text-xs sm:text-sm">
                     {startingDrill ? <Loader2 size={18} className="animate-spin" /> : <RotateCcw size={18} />} {startingDrill ? "Restarting..." : "Practice Again"}
                   </button>
                 </>
@@ -1223,12 +1337,12 @@ export default function DrillPage() {
                 <>
                   <button onClick={() => handleStartDrill(selectedSet)}
                     disabled={startingDrill}
-                    className={`flex-[2] flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-4 rounded-xl hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed ${startingDrill ? "" : "animate-pulse"}`}>
+                    className={`flex-[2] flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-3 sm:py-4 rounded-xl hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed text-xs sm:text-sm ${startingDrill ? "" : "animate-pulse"}`}>
                     {startingDrill ? <Loader2 size={18} className="animate-spin" /> : <RotateCcw size={18} />} {startingDrill ? "Repracticing..." : "🔁 Repractice This Card"}
                   </button>
                   <button onClick={goAllDrills}
                     disabled={startingDrill}
-                    className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-4 rounded-xl hover:bg-white/20 transition border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed">
+                    className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white font-bold py-3 sm:py-4 rounded-xl hover:bg-white/20 transition border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed text-xs sm:text-sm">
                     <ArrowLeft size={18} /> All Drills
                   </button>
                 </>
@@ -1250,9 +1364,15 @@ function LessonSetCard({
   isPassageCard,
   isVocabCard,
   isCombineSeqCard,
+  isErrorCorrectionCard,
+  isParaGapfillCard,
+  isSentenceExpansionCard,
+  isSentenceExpansionMcqCard,
   lessonBadge,
   onStartLesson,
   onStartCombine,
+  onStartParaGapfill,
+  onStartSentenceExpansion,
   onStartDrill,
   onStartPassage,
   onStartVocab,
@@ -1263,9 +1383,15 @@ function LessonSetCard({
   isPassageCard: (s: any) => boolean;
   isVocabCard: (s: any) => boolean;
   isCombineSeqCard: (s: any) => boolean;
+  isErrorCorrectionCard: (s: any) => boolean;
+  isParaGapfillCard: (s: any) => boolean;
+  isSentenceExpansionCard: (s: any) => boolean;
+  isSentenceExpansionMcqCard: (s: any) => boolean;
   lessonBadge: (s: any) => { label: string; classes: string } | null;
   onStartLesson: () => void;
   onStartCombine: () => void;
+  onStartParaGapfill: () => void;
+  onStartSentenceExpansion: () => void;
   onStartDrill: () => void;
   onStartPassage: () => void;
   onStartVocab: () => void;
@@ -1305,7 +1431,11 @@ function LessonSetCard({
               onStartVocab();
             } else if (isPassageCard({ card_type: set.card_type })) {
               onStartPassage();
-            } else if (isCombineSeqCard({ card_type: set.card_type })) {
+            } else if (isSentenceExpansionCard({ card_type: set.card_type })) {
+              onStartSentenceExpansion();
+            } else if (isParaGapfillCard({ card_type: set.card_type })) {
+              onStartParaGapfill();
+            } else if (isCombineSeqCard({ card_type: set.card_type }) || isErrorCorrectionCard({ card_type: set.card_type }) || isSentenceExpansionMcqCard({ card_type: set.card_type })) {
               onStartCombine();
             } else if (isLessonCard({ card_type: set.card_type })) {
               onStartLesson();
@@ -1323,12 +1453,12 @@ function LessonSetCard({
           {set.mastered ? (
             <>
               <RotateCcw size={13} />
-              {isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isLessonCard({ card_type: set.card_type }) ? (isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : "Practice") : "Retake"}
+              {isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write Again" : isParaGapfillCard({ card_type: set.card_type }) ? "Practice Again" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Practice Again" : isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Practice Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
             </>
           ) : (
             <>
               {isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
-              {isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isLessonCard({ card_type: set.card_type }) ? (isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : "Start") : "Drill"}
+              {isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write" : isParaGapfillCard({ card_type: set.card_type }) ? "Fill Blanks" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Correct" : isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Choose" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
             </>
           )}
         </button>

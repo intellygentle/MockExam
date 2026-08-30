@@ -1,6 +1,10 @@
 import "server-only";
 import { getCapitalizationCard, checkLine, type LessonBlock } from "./capitalization-cards";
 import { clauseCombiningCard } from "./clause-combining-card";
+import { errorCorrectionCard } from "./error-correction-card";
+import { paraGapfillCard, type ParaGapfillData } from "./para-gapfill-card";
+import { getMcqPart1, getMcqPart2 } from "./sentence-expansion-mcq-card";
+import { buildFreeWritePart1, buildFreeWritePart2, getRandomNudge } from "./sentence-expansion-card";
 
 /**
  * ============================================================
@@ -68,9 +72,20 @@ export type LessonQuestion = {
   rubric?: CombineRubric;
   /** Rubric used to grade combine_seq (one-at-a-time typed combining) cards. */
   seqRubric?: CombineSeqRubric;
+  /** Paragraph gap-fill data (passage + blanks + word bank). */
+  paraGapfill?: ParaGapfillData;
+  /** Sentence expansion data (topic + conjunction + model answer + key tokens). */
+  sentenceExpansion?: {
+    topic: string;
+    conjunction: string;
+    modelAnswer: string;
+    keyTokens: string[];
+  };
+  /** MCQ options for sentence expansion MCQ cards (stored as {a,b,c,d}). */
+  mcqOptions?: { a: string; b: string; c: string; d: string };
 };
 
-export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion";
 
 export type LessonCardDef = {
   slug: string;
@@ -270,6 +285,142 @@ export function gradeCombineSeq(studentText: string, question: LessonQuestion): 
   return { correct: hints.length === 0, hints };
 }
 
+/**
+ * Grade an error_correction answer by comparing the student's rewrite to the
+ * hidden model answer using lenient token matching. Returns banter instead of
+ * pedagogical hints — wrong answers get a quip, never a giveaway.
+ */
+export function gradeErrorCorrection(studentText: string, question: LessonQuestion): { correct: boolean; banter: string } {
+  const answer = normalizeText(question.answer);
+  const text = normalizeText(studentText);
+
+  // Exact-ish match: strip trailing periods/question marks for comparison
+  const strip = (s: string) => s.replace(/[.?!]+$/, "").trim();
+  if (strip(text) === strip(answer)) return { correct: true, banter: "" };
+
+  // Lenient: every word in the model answer appears in the student's text
+  const modelWords = answer.split(/\s+/).filter((w) => w.length > 2);
+  const allPresent = modelWords.every((w) => text.includes(w));
+  if (allPresent) return { correct: true, banter: "" };
+
+  // Wrong — return banter
+  const banterPool = [
+    "How many strokes of cane do you think you deserve for that? 😏",
+    "Even my grandmother writes better sentences than this! 👵",
+    "Is this English or were you inventing a new language? 🤔",
+    "I've seen better grammar from a broken typewriter! ⌨️",
+    "Your keyboard must be autocorrecting against you! 🤦",
+    "Were you typing with your eyes closed? 😂",
+    "That answer needs more than a little help — it needs CPR! 🏥",
+    "The grammar gods are weeping right now 😭",
+    "Even autocorrect gave up on that one! 📱",
+    "Are you sure you went to school? 🎓",
+    "That sentence just committed a grammar crime! 🚨",
+    "I'd give that a C-minus... on a generous day! 📝",
+    "Your English teacher would need therapy after reading that! 🛋️",
+    "Was that English? I thought it was Morse code! 📡",
+    "The comma police are coming for you! 👮",
+    "That answer was a grammatical disaster zone! 💥",
+    "I've seen neater handwriting from a spider on caffeine! 🕷️",
+    "Did that sentence just break up with proper grammar? 💔",
+    "Even spellcheck just filed a restraining order! 📋",
+    "That was so wrong, even the wrong answers are offended! 😤",
+  ];
+  const banter = banterPool[Math.floor(Math.random() * banterPool.length)];
+  return { correct: false, banter };
+}
+
+/**
+ * Grade a para_gapfill answer — an array of { blankIndex, word } entries.
+ * Returns per-blank correctness (no hints — the UI shows visual feedback only).
+ */
+export function gradeParaGapfill(
+  answers: { blankIndex: number; word: string }[],
+  question: LessonQuestion
+): { allCorrect: boolean; results: { index: number; correct: boolean }[] } {
+  const data = question.paraGapfill;
+  if (!data) return { allCorrect: false, results: [] };
+
+  const results = data.blanks.map((blank) => {
+    const studentAnswer = answers.find((a) => a.blankIndex === blank.index);
+    const correct = studentAnswer?.word?.toLowerCase().trim() === blank.answer.toLowerCase().trim();
+    return { index: blank.index, correct };
+  });
+
+  const allCorrect = results.every((r) => r.correct);
+  return { allCorrect, results };
+}
+
+/**
+ * Grade a sentence_expansion answer — a free-write sentence.
+ * Lenient: checks (1) conjunction present, (2) comma rule, (3) single conjunction,
+ * (4) approximate topic relevance via key tokens. Returns correct + nudge.
+ */
+export function gradeSentenceExpansion(
+  studentText: string,
+  question: LessonQuestion
+): { correct: boolean; nudge: string } {
+  const data = question.sentenceExpansion;
+  if (!data) return { correct: false, nudge: "Try again." };
+
+  const text = normalizeText(studentText);
+  const conj = data.conjunction.toLowerCase();
+
+  // Must be a real sentence (at least ~15 chars)
+  if (text.length < 15) {
+    return { correct: false, nudge: "Write a complete sentence — it needs a subject, verb, and enough detail to make sense. ✍️" };
+  }
+
+  // 1. Conjunction must appear
+  if (!text.includes(conj)) {
+    return { correct: false, nudge: `Your sentence must use the conjunction "${data.conjunction}". Don't forget it! 📝` };
+  }
+
+  // 2. Single conjunction — check no double conjunctions
+  const allConjs = ["because", "since", "although", "though", "even though", "whereas", "while", "if", "unless", "provided that", "as long as", "even if", "lest", "supposing that", "before", "after", "once", "so that"];
+  const usedConjs = allConjs.filter((c) => text.includes(c));
+  if (usedConjs.length > 1) {
+    return { correct: false, nudge: "Your sentence uses more than one conjunction — use only ONE per sentence. 🚫" };
+  }
+
+  // 3. Comma rule (lenient)
+  const frontedConjs = ["if", "although", "though", "even though", "even if", "supposing that", "once", "before", "after", "while", "whereas", "because", "since", "unless", "provided that", "as long as", "lest"];
+  const startsWithConj = text.startsWith(conj + " ") || text.startsWith(conj + ",");
+  const needsFrontComma = frontedConjs.includes(conj) && startsWithConj;
+  if (needsFrontComma && !text.includes(conj + ",") && !text.includes(", " + conj) && !text.match(new RegExp(conj.replace(/ /g, "\\s+") + ",\\s"))) {
+    // Check if there's a comma somewhere after the conjunction phrase
+    const conjIdx = text.indexOf(conj);
+    const afterConj = text.slice(conjIdx + conj.length);
+    // Find the end of the subordinate clause (rough: next comma or period)
+    const clauseEnd = afterConj.indexOf(",");
+    if (clauseEnd === -1) {
+      return { correct: false, nudge: "When the conjunction starts the sentence, put a comma after the subordinate clause before the main clause. ✏️" };
+    }
+  }
+
+  // For whereas/although/though — comma required even when trailing
+  const trailingCommaConjs = ["whereas", "although", "though"];
+  if (trailingCommaConjs.includes(conj) && !startsWithConj) {
+    // Check there's a comma before the conjunction
+    const conjIdx = text.indexOf(conj);
+    const beforeConj = text.slice(0, conjIdx).trim();
+    if (beforeConj && !beforeConj.endsWith(",")) {
+      return { correct: false, nudge: "When using 'whereas/although/though' in the middle of a sentence, put a comma before it. ✏️" };
+    }
+  }
+
+  // 4. Topic relevance (lenient — at least 1 key token from the topic)
+  const topicWords = data.topic.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+  const hasTopicWord = topicWords.some((w) => text.includes(w));
+  const hasKeyToken = data.keyTokens.some((t) => text.includes(t));
+  if (!hasTopicWord && !hasKeyToken && data.keyTokens.length > 0) {
+    return { correct: false, nudge: "Your sentence doesn't seem to be about the given topic. Make sure it addresses it! 🎯" };
+  }
+
+  // Passed all checks
+  return { correct: true, nudge: "" };
+}
+
 /** Grade one question, returning both the verdict and the hints to show.
  * For combine cards the hints are generated per failed rubric check.
  */
@@ -282,6 +433,13 @@ export function gradeQuestionWithHints(
   if (!question) return { correct: false, hints: [] };
   if (card.kind === "combine_seq") {
     return gradeCombineSeq(studentText, question);
+  }
+  if (card.kind === "error_correction") {
+    // error_correction uses banter, not hints — handled at the component level
+    // This path is only reached via the generic dispatcher; the check route
+    // handles error_correction separately.
+    const result = gradeErrorCorrection(studentText, question);
+    return { correct: result.correct, hints: [] };
   }
   if (card.kind === "capitalize") {
     const correct = checkLine(studentText, {
@@ -323,7 +481,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -1045,4 +1203,26 @@ const CARDS: Record<string, LessonCardDef> = {
       },
     ],
   },
+
+  // ════════════════════════════════════════════════════════
+  // Subordinating Conjunction Error Correction
+  // ════════════════════════════════════════════════════════
+  "subconj-error-correction": errorCorrectionCard,
+
+  // ════════════════════════════════════════════════
+  // Subordinating Conjunction Paragraph Exercise
+  // ════════════════════════════════════════════════
+  "subconj-paragraph-exercise": paraGapfillCard,
+
+  // ════════════════════════════════════════════════
+  // Sentence Expansion — MCQ Parts 1 & 2
+  // ════════════════════════════════════════════════
+  "sentence-expansion-mcq-part1": getMcqPart1(),
+  "sentence-expansion-mcq-part2": getMcqPart2(),
+
+  // ════════════════════════════════════════════════
+  // Sentence Expansion — Free Write Parts 1 & 2
+  // ════════════════════════════════════════════════
+  "sentence-expansion-part1": buildFreeWritePart1(),
+  "sentence-expansion-part2": buildFreeWritePart2(),
 };

@@ -74,6 +74,8 @@ export default function QuestionCard({ question, stickers, onAnswer, onNext }: P
   const optionKeys = getOptionKeys(question.options);
   const [selected, setSelected] = useState<OptionKey | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const [activeSticker, setActiveSticker] = useState<string | null>(null);
   const [activeBanter, setActiveBanter] = useState<string>("");
 
@@ -199,10 +201,14 @@ ${data.explanation}`
       setAiError(null);
       setAiPanelOpen(false);
     }
+    // Reset button guards when question changes
+    setSubmitting(false);
+    setNavigating(false);
   }, [cacheKey]);
 
   const handleSubmit = () => {
-    if (!selected) return;
+    if (!selected || submitting) return;
+    setSubmitting(true);
     const correct = selected === question.correct;
 
     if (correct) {
@@ -213,12 +219,6 @@ ${data.explanation}`
         colors: ["#FFD700", "#ffffff", "#28a745"] 
       });
     } else {
-      // [Temporarily disabled] Pick a random sticker if available
-      // if (stickers && stickers.length > 0) {
-      //   const randomSticker = stickers[Math.floor(Math.random() * stickers.length)];
-      //   setActiveSticker(randomSticker.url);
-      // }
-      // Pick a random banter quote
       const randomMessage = encouragements[Math.floor(Math.random() * encouragements.length)];
       setActiveBanter(randomMessage);
     }
@@ -227,10 +227,16 @@ ${data.explanation}`
     onAnswer(correct, selected);
   };
 
+  const handleNextClick = () => {
+    if (navigating) return;
+    setNavigating(true);
+    onNext();
+  };
+
   return (
-    <div className="card w-full max-w-2xl mx-auto space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-lg border border-white/10">
+    <div className="card w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-lg border border-white/10">
       <div className="flex justify-between items-start">
-        <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.3em] text-policeGold font-semibold">
+        <span className="bg-white/10 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-policeGold font-semibold">
           {question.category}
         </span>
       </div>
@@ -249,7 +255,7 @@ ${data.explanation}`
         </div>
       )}
 
-      <h3 className="text-2xl sm:text-3xl font-semibold font-heading text-white leading-tight">
+      <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold font-heading text-white leading-tight">
         <LatexRenderer text={question.question} />
       </h3>
 
@@ -358,7 +364,7 @@ ${data.explanation}`
         </AnimatePresence>
       </div>
 
-      <div className="grid gap-3 mt-4">
+      <div className="grid gap-2 sm:gap-3 mt-3 sm:mt-4">
         {optionKeys.map((option) => {
           const isCorrect = option === question.correct;
           const isSelected = selected === option;
@@ -373,19 +379,19 @@ ${data.explanation}`
               key={option}
               onClick={() => !submitted && setSelected(option)}
               className={`
-                group flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all duration-300
+                group flex items-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border px-3 sm:px-5 py-3 sm:py-4 text-left transition-all duration-300
                 ${stateStyle}
               `}
               disabled={submitted}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-colors
+              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 transition-colors
                 ${isSelected && !submitted ? "bg-policeGold text-black" : "bg-white/10 group-hover:bg-white/20"}
                 ${submitted && isCorrect ? "bg-policeGreen text-white" : ""}
                 ${submitted && isSelected && !isCorrect ? "bg-policeRed text-white" : ""}
               `}>
                 {option.toUpperCase()}
               </div>
-              <LatexRenderer text={question.options[option]!} className="text-base sm:text-lg font-medium select-none" />
+              <LatexRenderer text={question.options[option]!} className="text-sm sm:text-base md:text-lg font-medium select-none" />
             </button>
           );
         })}
@@ -394,8 +400,8 @@ ${data.explanation}`
       {!submitted ? (
         <button
           onClick={handleSubmit}
-          disabled={!selected}
-          className="w-full mt-6 rounded-2xl bg-policeGold py-4 text-center font-bold uppercase tracking-widest text-policeBlue transition hover:brightness-110 disabled:opacity-30 disabled:scale-100 hover:scale-[1.02] active:scale-95 shadow-lg"
+          disabled={!selected || submitting}
+          className="w-full mt-4 sm:mt-6 rounded-xl sm:rounded-2xl bg-policeGold py-3 sm:py-4 text-center font-bold uppercase tracking-widest text-sm sm:text-base text-policeBlue transition hover:brightness-110 disabled:opacity-30 disabled:scale-100 hover:scale-[1.02] active:scale-95 shadow-lg"
         >
           Submit 
         </button>
@@ -442,10 +448,11 @@ ${data.explanation}`
           )}
 
           <button
-            onClick={onNext}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 py-4 text-center font-bold text-white transition active:scale-95 border border-white/10"
+            onClick={handleNextClick}
+            disabled={navigating}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 py-3 sm:py-4 text-center font-bold text-white transition active:scale-95 border border-white/10 text-sm sm:text-base disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Next Question <ArrowRight size={18} />
+            {navigating ? <><Loader2 size={18} className="animate-spin" /> Loading...</> : <>Next Question <ArrowRight size={18} /></>}
           </button>
         </motion.div>
       )}

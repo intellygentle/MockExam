@@ -24,7 +24,7 @@ type Props = {
   onDone: () => void;
 };
 
-type CheckResult = { correct: boolean; hints: string[] };
+type CheckResult = { correct: boolean; hints: string[]; banter?: string };
 
 export default function CombineCard({ set, studentName, onDone }: Props) {
   const [loading, setLoading] = useState(true);
@@ -38,6 +38,7 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
   const [result, setResult] = useState<CheckResult | null>(null);
   const [checking, setChecking] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
+  const [cardKind, setCardKind] = useState<string>("");
   const [mastered, setMastered] = useState(false);
   const celebratedRef = useRef(false);
 
@@ -58,6 +59,7 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
         setDescription(data.description || set.description);
         setLesson(data.lesson || []);
         setPrompts(data.items || []);
+        setCardKind(data.kind || "");
       } catch (e: any) {
         if (!cancelled) setError(e.message || "Something went wrong.");
       } finally {
@@ -81,7 +83,7 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
   const handleCheck = async () => {
     if (checking || mastered) return;
     const answer = draft.trim();
-    if (!answer) { setError("Type your combined sentence before checking."); return; }
+    if (!answer) { setError(cardKind === "error_correction" ? "Rewrite the sentence before checking." : "Type your combined sentence before checking."); return; }
     setChecking(true);
     setError("");
     try {
@@ -96,7 +98,7 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Could not check your answer."); return; }
-      setResult({ correct: !!data.correct, hints: data.hints || [] });
+      setResult({ correct: !!data.correct, hints: data.hints || [], banter: data.banter });
       if (data.correct) {
         setCompletedCount((c) => c + 1);
       }
@@ -107,7 +109,11 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
     }
   };
 
+  const [navigating, setNavigating] = useState(false);
+
   const handleNext = () => {
+    if (navigating) return;
+    setNavigating(true);
     if (currentIndex + 1 >= total) {
       setMastered(true);
       if (!celebratedRef.current) {
@@ -117,6 +123,7 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
     } else {
       setCurrentIndex((i) => i + 1);
     }
+    setTimeout(() => setNavigating(false), 300);
   };
 
   const renderLessonBlock = (block: LessonBlock, i: number) => {
@@ -220,19 +227,19 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
   return (
     <div className="space-y-5 pb-10">
       {/* Sticky header */}
-      <div className="sticky top-0 z-30 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 -mx-4 px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-          <button onClick={onDone} className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60 hover:text-white transition shrink-0">
+      <div className="sticky top-0 z-30 bg-[#030712]/80 backdrop-blur-xl border-b border-white/10 -mx-4 px-3 sm:px-4 py-2.5 sm:py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
+          <button onClick={onDone} className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-sm text-white/60 hover:text-white transition shrink-0">
             <ArrowLeft size={16} /> <span className="hidden sm:inline">Back to Drills</span>
           </button>
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <span className="hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0 bg-sky-500/15 text-sky-300">
               <Merge size={11} /> Sentence Combining
             </span>
-            <span className="text-xs sm:text-sm font-bold text-white truncate">{title}</span>
+            <span className="text-[11px] sm:text-sm font-bold text-white truncate">{title}</span>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className={`text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${mastered ? "bg-policeGreen/15 text-policeGreen" : "bg-white/10 text-white/70"}`}>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className={`text-[9px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 sm:gap-1.5 ${mastered ? "bg-policeGreen/15 text-policeGreen" : "bg-white/10 text-white/70"}`}>
               <CheckCircle2 size={11} /> {completedCount}/{total}
             </span>
           </div>
@@ -290,10 +297,10 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
             <motion.div key={`q-${currentIndex}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}
               className="card space-y-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-sky-500/15 text-sky-300"><Merge size={22} /></div>
+                <div className={`p-2.5 rounded-xl ${cardKind === "error_correction" ? "bg-orange-500/15 text-orange-300" : "bg-sky-500/15 text-sky-300"}`}>{cardKind === "error_correction" ? <PencilLine size={22} /> : <Merge size={22} />}</div>
                 <div>
                   <h2 className="text-xl font-heading font-bold text-white leading-tight">{title}</h2>
-                  <p className="text-[10px] uppercase tracking-widest text-white/40">Type your combined sentence</p>
+                  <p className="text-[10px] uppercase tracking-widest text-white/40">{cardKind === "error_correction" ? "Rewrite the sentence correctly" : "Type your combined sentence"}</p>
                 </div>
               </div>
 
@@ -307,11 +314,12 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
                 )}
               </div>
 
-              {/* Source sentences */}
+              {/* Source sentence(s) */}
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-1.5">
                 {(currentPrompt?.prompt.split("\n") || []).slice(0, 2).map((line, li) => (
                   <p key={li} className="text-base text-white/90 leading-relaxed flex items-start gap-2">
-                    <span className="text-white/25 shrink-0">{li === 0 ? "1." : "2."}</span> {line}
+                    {cardKind === "error_correction" ? null : <span className="text-white/25 shrink-0">{li === 0 ? "1." : "2."}</span>}
+                    {line}
                   </p>
                 ))}
               </div>
@@ -335,7 +343,7 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
                   onChange={(e) => setDraft(e.target.value)}
                   rows={3}
                   spellCheck={false}
-                  placeholder="Combine the two sentences into one..."
+                  placeholder={cardKind === "error_correction" ? "Rewrite the sentence correctly..." : "Combine the two sentences into one..."}
                   className="w-full bg-black/40 border border-white/10 focus:border-sky-400/60 rounded-xl px-4 py-3 text-white text-base leading-relaxed outline-none resize-none transition placeholder:text-white/25"
                 />
               </div>
@@ -348,20 +356,28 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
                     {result.correct ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle2 size={20} className="text-policeGreen shrink-0" />
-                        <p className="text-sm font-bold text-policeGreen">Correct! Perfectly combined.</p>
+                        <p className="text-sm font-bold text-policeGreen">Correct! Well done.</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <p className="text-[10px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5">
-                          <Lightbulb size={11} /> Not quite — here's a hint
-                        </p>
-                        <ul className="space-y-1">
-                          {(result.hints || []).map((hint, j) => (
-                            <li key={j} className="text-xs text-amber-100/80 leading-relaxed flex items-start gap-1.5">
-                              <span className="text-amber-400 shrink-0">•</span> {hint}
-                            </li>
-                          ))}
-                        </ul>
+                        {cardKind === "error_correction" && result.banter ? (
+                          <p className="text-sm text-orange-300 font-medium italic">
+                            {result.banter}
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-[10px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5">
+                              <Lightbulb size={11} /> Not quite — here's a hint
+                            </p>
+                            <ul className="space-y-1">
+                              {(result.hints || []).map((hint, j) => (
+                                <li key={j} className="text-xs text-amber-100/80 leading-relaxed flex items-start gap-1.5">
+                                  <span className="text-amber-400 shrink-0">•</span> {hint}
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
                       </div>
                     )}
                   </motion.div>
@@ -376,10 +392,10 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
                   {checking ? "Checking..." : "Check My Answer"}
                 </button>
               ) : (
-                <button onClick={handleNext}
-                  className="w-full flex items-center justify-center gap-2 bg-policeGreen text-white font-bold py-4 rounded-xl hover:brightness-110 transition">
-                  {currentIndex + 1 >= total ? <BadgeCheck size={18} /> : <ArrowRight size={18} />}
-                  {currentIndex + 1 >= total ? "Finish Card" : "Next Question"}
+                <button onClick={handleNext} disabled={navigating}
+                  className="w-full flex items-center justify-center gap-2 bg-policeGreen text-white font-bold py-4 rounded-xl hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed">
+                  {navigating ? <Loader2 size={18} className="animate-spin" /> : currentIndex + 1 >= total ? <BadgeCheck size={18} /> : <ArrowRight size={18} />}
+                  {navigating ? "Loading..." : currentIndex + 1 >= total ? "Finish Card" : "Next Question"}
                 </button>
               )}
 

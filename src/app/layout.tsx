@@ -36,12 +36,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <h1 className="text-2xl sm:text-3xl font-heading font-semibold text-policeGold tracking-wide">Scholars Arena</h1>
                 </div>
               </Link>
-              <div className="flex gap-4 items-center">
-                <Link href="/practice" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Practice</Link>
-                <Link href="/study" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Study</Link>
-                <Link href="/dashboard" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Progress</Link>
-                <Link href="/leaderboard" className="text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Leaderboard</Link>
-              </div>
+              <nav className="flex flex-wrap items-center justify-start md:justify-end gap-x-4 sm:gap-x-5 gap-y-2">
+                <Link href="/practice" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Practice</Link>
+                <Link href="/study" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Study</Link>
+                <Link href="/dashboard" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Progress</Link>
+                <Link href="/leaderboard" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Leaderboard</Link>
+              </nav>
             </div>
           </header>
           

@@ -510,7 +510,7 @@ export default function PracticePage() {
               <div className="inline-flex p-4 bg-white/5 rounded-full">
                 <GraduationCap size={40} className="text-policeGold" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-heading font-bold text-policeGold">Practice Ground</h1>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold text-policeGold">Practice Ground</h1>
               <p className="text-white/60">Enter your nickname and pick your level to get started!</p>
             </div>
 
@@ -607,30 +607,30 @@ export default function PracticePage() {
               {savedName && (
                 <div className="level-select-section pt-2 border-t border-white/10">
                   <label className="block text-xs uppercase tracking-[0.2em] text-white/50 mb-3">Choose Your Level</label>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <button onClick={() => handleLevelSelect("jss3")}
-                      className="p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-policeGreen transition-all text-left hover:bg-policeGreen/5 group">
-                      <div className="p-3 rounded-full inline-flex mb-3 bg-white/10 text-white/60 group-hover:bg-policeGreen/20 group-hover:text-policeGreen transition-colors">
-                        <BookOpen size={24} />
+                      className="p-3 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-white/10 bg-white/5 hover:border-policeGreen transition-all text-left hover:bg-policeGreen/5 group">
+                      <div className="p-2 sm:p-3 rounded-full inline-flex mb-2 sm:mb-3 bg-white/10 text-white/60 group-hover:bg-policeGreen/20 group-hover:text-policeGreen transition-colors">
+                        <BookOpen size={20} className="sm:hidden" /><BookOpen size={24} className="hidden sm:block" />
                       </div>
-                      <h3 className="text-xl font-heading font-bold text-white group-hover:text-policeGreen transition-colors">JSS3</h3>
-                      <p className="text-xs text-white/50 mt-1">Junior Secondary</p>
+                      <h3 className="text-base sm:text-xl font-heading font-bold text-white group-hover:text-policeGreen transition-colors">JSS3</h3>
+                      <p className="text-[10px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 hidden sm:block">Junior Secondary</p>
                     </button>
                     <button onClick={() => handleLevelSelect("ss3")}
-                      className="p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-policeGold transition-all text-left hover:bg-policeGold/5 group">
-                      <div className="p-3 rounded-full inline-flex mb-3 bg-white/10 text-white/60 group-hover:bg-policeGold/20 group-hover:text-policeGold transition-colors">
-                        <GraduationCap size={24} />
+                      className="p-3 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-white/10 bg-white/5 hover:border-policeGold transition-all text-left hover:bg-policeGold/5 group">
+                      <div className="p-2 sm:p-3 rounded-full inline-flex mb-2 sm:mb-3 bg-white/10 text-white/60 group-hover:bg-policeGold/20 group-hover:text-policeGold transition-colors">
+                        <GraduationCap size={20} className="sm:hidden" /><GraduationCap size={24} className="hidden sm:block" />
                       </div>
-                      <h3 className="text-xl font-heading font-bold text-white group-hover:text-policeGold transition-colors">SS3</h3>
-                      <p className="text-xs text-white/50 mt-1">Senior Secondary</p>
+                      <h3 className="text-base sm:text-xl font-heading font-bold text-white group-hover:text-policeGold transition-colors">SS3</h3>
+                      <p className="text-[10px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 hidden sm:block">Senior Secondary</p>
                     </button>
                     <button onClick={() => router.push("/study")}
-                      className="p-6 rounded-2xl border-2 border-policeGold/40 bg-policeGold/5 hover:border-policeGold transition-all text-left hover:bg-policeGold/10 group">
-                      <div className="p-3 rounded-full inline-flex mb-3 bg-policeGold/20 text-policeGold group-hover:scale-110 transition-transform">
-                        <Swords size={24} />
-                      </div>
-                      <h3 className="text-xl font-heading font-bold text-policeGold group-hover:brightness-110 transition-all">A-Level</h3>
-                      <p className="text-xs text-white/50 mt-1">Study & Practice</p>
+                      className="p-3 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-policeGold/40 bg-policeGold/5 hover:border-policeGold transition-all text-left hover:bg-policeGold/10 group">
+                        <div className="p-2 sm:p-3 rounded-full inline-flex mb-2 sm:mb-3 bg-policeGold/20 text-policeGold group-hover:scale-110 transition-transform">
+                          <Swords size={20} className="sm:hidden" /><Swords size={24} className="hidden sm:block" />
+                        </div>
+                        <h3 className="text-base sm:text-xl font-heading font-bold text-policeGold group-hover:brightness-110 transition-all">A-Level</h3>
+                        <p className="text-[10px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 hidden sm:block">Study & Practice</p>
                     </button>
                   </div>
                 </div>
@@ -645,7 +645,7 @@ export default function PracticePage() {
                   {ss3Departments.length === 0 ? (
                     <p className="text-white/40 text-sm text-center py-4">No departments configured yet.</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                       {ss3Departments.map((dept) => (
                         <button key={dept.id} onClick={() => handleDeptSelect(dept.id)}
                           className={`p-4 rounded-xl border-2 transition-all text-center ${selectedDept === dept.id ? "border-policeGold bg-policeGold/10" : "border-white/10 bg-white/5 hover:border-white/30"}`}>
@@ -841,11 +841,11 @@ export default function PracticePage() {
               <h2 className={`text-3xl sm:text-4xl font-heading font-bold ${result.color} mb-3`}>{result.title}</h2>
               <p className="text-white/70 text-lg max-w-xl mx-auto leading-relaxed">{result.message}</p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6">
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10"><p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Score</p><p className="text-3xl font-bold text-policeGold">{state.points}</p></div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10"><p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Correct</p><p className="text-3xl font-bold text-policeGreen">{state.correctAnswers}/{totalQuestions}</p></div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10"><p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Percentage</p><p className="text-3xl font-bold text-white">{percentage}%</p></div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10"><p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Best Streak</p><p className="text-3xl font-bold text-orange-400">{state.streak}</p></div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 py-4 sm:py-6">
+              <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/10"><p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-white/50 mb-1">Score</p><p className="text-xl sm:text-3xl font-bold text-policeGold">{state.points}</p></div>
+              <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/10"><p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-white/50 mb-1">Correct</p><p className="text-xl sm:text-3xl font-bold text-policeGreen">{state.correctAnswers}/{totalQuestions}</p></div>
+              <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/10"><p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-white/50 mb-1">Percentage</p><p className="text-xl sm:text-3xl font-bold text-white">{percentage}%</p></div>
+              <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/10"><p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-white/50 mb-1">Best Streak</p><p className="text-xl sm:text-3xl font-bold text-orange-400">{state.streak}</p></div>
             </div>
             <div className="bg-black/30 rounded-2xl p-6 border border-white/5">
               <div className="flex items-center justify-center gap-2 mb-4"><Award size={20} className="text-policeGold" /><p className="text-xs uppercase tracking-[0.3em] text-white/50">Badges Unlocked</p></div>

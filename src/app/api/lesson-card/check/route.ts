@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getLessonCard, gradeQuestionWithHints } from "@/lib/server/lesson-cards";
+import { getLessonCard, gradeQuestionWithHints, gradeErrorCorrection, gradeParaGapfill, gradeSentenceExpansion } from "@/lib/server/lesson-cards";
+import { getRandomNudge } from "@/lib/server/sentence-expansion-card";
 
 /**
  * POST /api/lesson-card/check
@@ -40,8 +41,8 @@ export async function POST(req: Request) {
     }
 
     const cardType = set.card_type || "quiz";
-    if (cardType !== "combine_seq") {
-      return NextResponse.json({ error: "This drill set is not a combine-seq card" }, { status: 400 });
+    if (cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq") {
+      return NextResponse.json({ error: "This drill set is not a sequential card" }, { status: 400 });
     }
     const card = getLessonCard(cardType, set.capitalization_slug);
     if (!card) {
@@ -54,9 +55,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Question index out of range" }, { status: 400 });
     }
 
+    // para_gapfill accepts an array of blank answers (no single 'answer' field)
+    if (cardType === "para_gapfill") {
+      const answers = typeof body.answers === "string" ? JSON.parse(body.answers) : body.answers;
+      if (!Array.isArray(answers)) {
+        return NextResponse.json({ error: "answers array is required" }, { status: 400 });
+      }
+      const { allCorrect, results } = gradeParaGapfill(answers, card.questions[qIndex]);
+      return NextResponse.json({ correct: allCorrect, hints: [], results });
+    }
+
     const studentText = typeof answer === "string" ? answer : "";
     if (!studentText.trim()) {
-      return NextResponse.json({ error: "Please type your combined sentence before checking." }, { status: 400 });
+      return NextResponse.json({ error: "Please type your answer before checking." }, { status: 400 });
+    }
+
+    // error_correction uses banter, not hints
+    if (cardType === "error_correction") {
+      const { correct, banter } = gradeErrorCorrection(studentText, card.questions[qIndex]);
+      return NextResponse.json({ correct, hints: [], banter });
+    }
+
+    // sentence_expansion uses lenient grading with nudges
+    if (cardType === "sentence_expansion") {
+      const { correct, nudge } = gradeSentenceExpansion(studentText, card.questions[qIndex]);
+      return NextResponse.json({ correct, hints: [], nudge });
     }
 
     const { correct, hints } = gradeQuestionWithHints(card, studentText, qIndex);

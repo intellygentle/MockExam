@@ -42,19 +42,19 @@ export default function PassageCard({
   const passageText = set.description || "";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 py-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 py-4 sm:py-6 px-2 sm:px-0">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-start justify-between gap-4"
+        className="flex items-start justify-between gap-2 sm:gap-4"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center border border-rose-500/20">
-            <ScrollText size={24} className="text-rose-400" />
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center border border-rose-500/20 shrink-0">
+            <ScrollText size={22} className="text-rose-400" />
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-heading font-bold text-white">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-white">
               {set.title}
             </h1>
             <p className="text-white/50 text-sm mt-0.5">
@@ -62,12 +62,11 @@ export default function PassageCard({
             </p>
           </div>
         </div>
-        <button
-          onClick={onDone}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition text-sm shrink-0"
-        >
-          <ArrowLeft size={16} /> Back
-        </button>
+      <button
+        onClick={onDone}
+        className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition text-xs sm:text-sm shrink-0">
+        <ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span>
+      </button>
       </motion.div>
 
       {/* Student info bar */}
@@ -75,7 +74,7 @@ export default function PassageCard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-3"
+        className="bg-white/5 border border-white/10 rounded-xl p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
       >
         <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400 text-xs font-bold">
           {studentName ? studentName[0].toUpperCase() : "?"}
