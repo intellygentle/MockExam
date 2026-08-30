@@ -72,6 +72,7 @@ export async function GET(req: Request) {
         paraGapfill: q.paraGapfill || null,
         mcqOptions: q.mcqOptions || null,
         sentenceExpansion: q.sentenceExpansion || null,
+        relationshipOptions: q.relationshipOptions || null,
       })),
       lineCount: card.questions.length,
       attempt: attempt

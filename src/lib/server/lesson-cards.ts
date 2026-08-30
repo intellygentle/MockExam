@@ -1,6 +1,7 @@
 import "server-only";
 import { getCapitalizationCard, checkLine, type LessonBlock } from "./capitalization-cards";
 import { clauseCombiningCard } from "./clause-combining-card";
+import { relationshipCombiningCard } from "./relationship-combining-card";
 import { errorCorrectionCard } from "./error-correction-card";
 import { paraGapfillCard, type ParaGapfillData } from "./para-gapfill-card";
 import { getMcqPart1, getMcqPart2 } from "./sentence-expansion-mcq-card";
@@ -57,6 +58,12 @@ export type CombineSeqRubric = {
   requiredTokens: string[];
 };
 
+export type RelationshipCombineRubric = {
+  relationship: "Cause/Effect" | "Contrast" | "Condition" | "Time";
+  acceptableConjunctions: string[];
+  requiredTokens: string[];
+};
+
 /** A single practice item inside a lesson card. */
 export type LessonQuestion = {
   /** The sentence shown to the student (uncapitalized for capitalize cards). */
@@ -72,6 +79,12 @@ export type LessonQuestion = {
   rubric?: CombineRubric;
   /** Rubric used to grade combine_seq (one-at-a-time typed combining) cards. */
   seqRubric?: CombineSeqRubric;
+  /** Three-step relationship, conjunction, and sentence-combination grading. */
+  relationshipRubric?: RelationshipCombineRubric;
+  /** Detailed feedback returned only after the item is answered correctly. */
+  explanation?: string;
+  /** Choices shown for relationship-analysis questions. */
+  relationshipOptions?: string[];
   /** Paragraph gap-fill data (passage + blanks + word bank). */
   paraGapfill?: ParaGapfillData;
   /** Sentence expansion data (topic + conjunction + model answer + key tokens). */
@@ -235,7 +248,46 @@ export function gradeCombine(studentText: string, question: LessonQuestion): { c
  * is placed per the instruction (leading order + comma rule), and (4) it
  * stays a single sentence.
  */
-export function gradeCombineSeq(studentText: string, question: LessonQuestion): { correct: boolean; hints: string[] } {
+export function gradeCombineSeq(
+  studentText: string,
+  question: LessonQuestion,
+  analysis?: { relationship?: string; conjunction?: string }
+): { correct: boolean; hints: string[] } {
+  const relationshipRubric = question.relationshipRubric;
+  if (relationshipRubric) {
+    const text = normalizeText(studentText);
+    const relationship = normalizeText(analysis?.relationship || "");
+    const conjunction = normalizeText(analysis?.conjunction || "");
+    const acceptable = relationshipRubric.acceptableConjunctions.map(normalizeText);
+    const relationshipCorrect = relationship === normalizeText(relationshipRubric.relationship);
+    const conjunctionCorrect = acceptable.includes(conjunction);
+    const conjunctionUsed = conjunctionCorrect && new RegExp(
+      `\\b${conjunction.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+")}\\b`
+    ).test(text);
+    const contentCorrect = relationshipRubric.requiredTokens.every((token) => textHasToken(text, token));
+    const oneSentence = countSentences(text) <= 1;
+    const startsWithConjunction = conjunctionUsed && text.startsWith(conjunction + " ");
+    const frontedCommaCorrect = !startsWithConjunction || text.includes(",");
+    const trailingCommaConjunctions = ["although", "though", "whereas", "while", "even though"];
+    const conjunctionIndex = conjunctionUsed ? text.indexOf(conjunction) : -1;
+    const trailingCommaCorrect =
+      conjunctionIndex <= 0 ||
+      !trailingCommaConjunctions.includes(conjunction) ||
+      text.slice(0, conjunctionIndex).trimEnd().endsWith(",");
+
+    return {
+      correct:
+        relationshipCorrect &&
+        conjunctionCorrect &&
+        conjunctionUsed &&
+        contentCorrect &&
+        oneSentence &&
+        frontedCommaCorrect &&
+        trailingCommaCorrect,
+      hints: [],
+    };
+  }
+
   const rubric = question.seqRubric;
   if (!rubric) return { correct: false, hints: question.hints };
 
@@ -427,12 +479,13 @@ export function gradeSentenceExpansion(
 export function gradeQuestionWithHints(
   card: LessonCardDef,
   studentText: string,
-  index: number
+  index: number,
+  analysis?: { relationship?: string; conjunction?: string }
 ): { correct: boolean; hints: string[] } {
   const question = card.questions[index];
   if (!question) return { correct: false, hints: [] };
   if (card.kind === "combine_seq") {
-    return gradeCombineSeq(studentText, question);
+    return gradeCombineSeq(studentText, question, analysis);
   }
   if (card.kind === "error_correction") {
     // error_correction uses banter, not hints — handled at the component level
@@ -1053,6 +1106,7 @@ const CARDS: Record<string, LessonCardDef> = {
   },
 
   [clauseCombiningCard.slug]: clauseCombiningCard,
+  [relationshipCombiningCard.slug]: relationshipCombiningCard,
 
   // ════════════════════════════════════════════════════════════════
   // True or False (true_false kind) — chip-selection cards.

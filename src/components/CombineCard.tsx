@@ -24,7 +24,7 @@ type Props = {
   onDone: () => void;
 };
 
-type CheckResult = { correct: boolean; hints: string[]; banter?: string };
+type CheckResult = { correct: boolean; hints: string[]; banter?: string; explanation?: string };
 
 export default function CombineCard({ set, studentName, onDone }: Props) {
   const [loading, setLoading] = useState(true);
@@ -32,9 +32,11 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
   const [title, setTitle] = useState(set.title);
   const [description, setDescription] = useState(set.description);
   const [lesson, setLesson] = useState<LessonBlock[]>([]);
-  const [prompts, setPrompts] = useState<{ prompt: string; source: string }[]>([]);
+  const [prompts, setPrompts] = useState<{ prompt: string; source: string; relationshipOptions?: string[] }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [draft, setDraft] = useState("");
+  const [relationship, setRelationship] = useState("");
+  const [conjunction, setConjunction] = useState("");
   const [result, setResult] = useState<CheckResult | null>(null);
   const [checking, setChecking] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
@@ -73,17 +75,24 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
   useEffect(() => {
     // Reset the draft + result whenever moving to a new question
     setDraft("");
+    setRelationship("");
+    setConjunction("");
     setResult(null);
     setError("");
   }, [currentIndex]);
 
   const currentPrompt = prompts[currentIndex];
+  const requiresAnalysis = !!currentPrompt?.relationshipOptions?.length;
   const instructionLine = currentPrompt?.source || "";
 
   const handleCheck = async () => {
     if (checking || mastered) return;
     const answer = draft.trim();
     if (!answer) { setError(cardKind === "error_correction" ? "Rewrite the sentence before checking." : "Type your combined sentence before checking."); return; }
+    if (requiresAnalysis && (!relationship || !conjunction.trim())) {
+      setError("Select the relationship and enter a conjunction before checking.");
+      return;
+    }
     setChecking(true);
     setError("");
     try {
@@ -94,11 +103,13 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
           drillSetId: set.id,
           index: currentIndex,
           answer,
+          relationship,
+          conjunction,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Could not check your answer."); return; }
-      setResult({ correct: !!data.correct, hints: data.hints || [], banter: data.banter });
+      setResult({ correct: !!data.correct, hints: data.hints || [], banter: data.banter, explanation: data.explanation });
       if (data.correct) {
         setCompletedCount((c) => c + 1);
       }
@@ -336,8 +347,29 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
               )}
 
               {/* Answer box */}
+              {requiresAnalysis && (
+                <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40">1. Logical relationship</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(currentPrompt.relationshipOptions || []).map((option) => (
+                        <button key={option} type="button" onClick={() => setRelationship(option)}
+                          className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition ${relationship === option ? "border-sky-400 bg-sky-500/20 text-sky-200" : "border-white/10 bg-black/20 text-white/60 hover:border-white/25"}`}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40">2. Subordinating conjunction</label>
+                    <input value={conjunction} onChange={(e) => setConjunction(e.target.value)} spellCheck={false}
+                      placeholder="Enter one suitable conjunction..."
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-sky-400/60" />
+                  </div>
+                </div>
+              )}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-widest text-white/40">Your combined sentence</label>
+                <label className="text-[10px] uppercase tracking-widest text-white/40">{requiresAnalysis ? "3. Your combined sentence" : "Your combined sentence"}</label>
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -354,13 +386,18 @@ export default function CombineCard({ set, studentName, onDone }: Props) {
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                     className={`rounded-2xl border p-4 overflow-hidden ${result.correct ? "bg-policeGreen/10 border-policeGreen/30" : "bg-amber-500/10 border-amber-500/25"}`}>
                     {result.correct ? (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 size={20} className="text-policeGreen shrink-0" />
-                        <p className="text-sm font-bold text-policeGreen">Correct! Well done.</p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={20} className="text-policeGreen shrink-0" />
+                          <p className="text-sm font-bold text-policeGreen">Correct! Well done.</p>
+                        </div>
+                        {result.explanation && <p className="text-xs leading-relaxed text-white/75">{result.explanation}</p>}
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {cardKind === "error_correction" && result.banter ? (
+                        {requiresAnalysis ? (
+                          <p className="text-sm text-amber-100/80">Not correct yet. Review all three steps and try again.</p>
+                        ) : cardKind === "error_correction" && result.banter ? (
                           <p className="text-sm text-orange-300 font-medium italic">
                             {result.banter}
                           </p>

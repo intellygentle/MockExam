@@ -82,9 +82,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ correct, hints: [], nudge });
     }
 
-    const { correct, hints } = gradeQuestionWithHints(card, studentText, qIndex);
+    const { correct, hints } = gradeQuestionWithHints(card, studentText, qIndex, {
+      relationship: typeof body.relationship === "string" ? body.relationship : "",
+      conjunction: typeof body.conjunction === "string" ? body.conjunction : "",
+    });
 
-    return NextResponse.json({ correct, hints });
+    return NextResponse.json({
+      correct,
+      hints,
+      explanation: correct ? card.questions[qIndex].explanation || "" : "",
+    });
   } catch (error: any) {
     console.error("Lesson card check API error:", error);
     return NextResponse.json(
