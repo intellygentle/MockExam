@@ -42,7 +42,7 @@ type Props = {
   gapChunks?: GapChunk[]; // optional fill-in-the-gap final test
 };
 
-const STUDY_SECONDS = 10;
+const STUDY_SECONDS = 15;
 
 // ── COMPONENT ──
 

@@ -82,6 +82,7 @@ type StackDrillSet = {
   capitalization_slug?: string;
   lesson_content?: string;
   subjectName: string;
+  image_url?: string;
   mastered: boolean;
   totalAttempts: number;
 };
