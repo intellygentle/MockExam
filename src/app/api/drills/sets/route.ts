@@ -50,10 +50,37 @@ export async function GET(req: Request) {
         let attemptHistory: any[] = [];
         if (studentName.trim()) {
           if (isPassageCard || isVocabCard) {
-            // Passage & vocabulary cards are not auto-graded
-            totalAttempts = 0;
-            mastered = false;
-            attemptHistory = [];
+            const { data: attempts } = await supabase
+              .from("drill_attempts")
+              .select("*")
+              .eq("student_name", studentName.trim())
+              .eq("drill_set_id", set.id)
+              .order("created_at", { ascending: false });
+            const completedAttempts = (attempts || []).filter((a: any) =>
+              !!a.completed && !!a.mastered && (a.total_questions ?? 0) > 0 && (a.correct_answers ?? 0) >= (a.total_questions ?? 0)
+            );
+            totalAttempts = completedAttempts.length;
+            mastered = completedAttempts.length > 0;
+            attemptHistory = completedAttempts.map((a: any, i: number) => ({
+              tryNumber: i + 1,
+              completed: true,
+              correctAnswers: a.correct_answers,
+              totalQuestions: a.total_questions,
+              percentage: 100,
+              timeSpentSeconds: a.time_spent_seconds || 0,
+              mastered: true,
+            }));
+            if (completedAttempts[0]) {
+              const latest = completedAttempts[0];
+              bestAttempt = {
+                id: latest.id,
+                completed: true,
+                correctAnswers: latest.correct_answers,
+                totalQuestions: latest.total_questions,
+                timeSpentSeconds: latest.time_spent_seconds || 0,
+                percentage: 100,
+              };
+            }
           } else if (isLessonCard) {
             // Lesson cards track attempts + retries separately
             const { data: attempts } = await supabase

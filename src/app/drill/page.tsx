@@ -8,7 +8,7 @@ import {
   Loader2, RotateCcw, BookOpen, BrainCircuit,
   Hourglass, Flame, Sparkles, ChevronRight, ChevronDown,
   TrendingUp, TrendingDown, Minus, BadgeCheck, PencilLine,
-  Layers, PenLine, type LucideIcon
+  Layers, PenLine, Crown, type LucideIcon
 } from "lucide-react";
 import QuestionCard from "@/components/QuestionCard";
 import LessonCard from "@/components/LessonCard";
@@ -614,17 +614,17 @@ export default function DrillPage() {
                             </span>
                             {totalCount > 0 && (
                               <span className={`text-[10px] font-semibold ${
-                                allMastered ? "text-policeGreen" : "text-policeGold"
+                                "text-policeGold"
                               }`}>
-                                {masteredCount}/{totalCount} mastered
+                                {allMastered ? "Master of Stack" : `${masteredCount}/${totalCount} mastered`}
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {allMastered && (
-                          <BadgeCheck size={16} className="text-policeGreen" />
+                         {allMastered && (
+                           <Crown size={18} className="text-policeGold" />
                         )}
                         <ChevronDown
                           size={16}
@@ -640,7 +640,7 @@ export default function DrillPage() {
                       <div className="mt-3 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                         <motion.div
                           className={`h-full rounded-full ${
-                            allMastered ? "bg-policeGreen" : "bg-gradient-to-r from-policeGold to-amber-400"
+                            allMastered ? "bg-gradient-to-r from-policeGold via-amber-300 to-policeGold" : "bg-gradient-to-r from-policeGold to-amber-400"
                           }`}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.round((masteredCount / totalCount) * 100)}%` }}
@@ -1401,18 +1401,23 @@ function LessonSetCard({
   const badge = lessonBadge(set);
 
   return (
-    <div
+      <div
       className={`rounded-xl border p-3.5 transition-all ${
         set.mastered
           ? "bg-policeGreen/10 border-policeGreen/30"
           : "bg-white/5 border-white/10 hover:border-policeGold/30"
       }`}
-    >
+      >
+      {set.mastered && (
+        <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-policeGold">
+          <BadgeCheck size={12} /> Card Mastered
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-bold text-white truncate">{set.title}</h4>
-            {set.mastered && <BadgeCheck size={14} className="text-policeGreen shrink-0" />}
+                             {set.mastered && <BadgeCheck size={14} className="text-policeGold shrink-0" />}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             {badge && (

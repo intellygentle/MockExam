@@ -226,7 +226,7 @@ export default function AdminDrillAnalyticsPage() {
                           )}
                         </p>
                         {set.masteredStudents > 0 && (
-                          <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-policeGreen bg-policeGreen/10 px-2 py-0.5 rounded-full">
+                           <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-policeGold bg-policeGold/10 px-2 py-0.5 rounded-full">
                             <Trophy size={9} /> {set.masteredStudents}/{set.totalStudents || 0} student{set.totalStudents !== 1 ? "s" : ""} mastered
                           </span>
                         )}
@@ -331,7 +331,7 @@ export default function AdminDrillAnalyticsPage() {
             <div className="bg-policeGreen/5 rounded-2xl p-5 border border-policeGreen/20 text-center">
               <Trophy size={24} className="text-policeGreen mx-auto mb-2" />
               <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Mastered</p>
-              <p className="text-3xl font-bold text-policeGreen">{analytics.summary.masteredStudents}</p>
+               <p className="text-3xl font-bold text-policeGold">{analytics.summary.masteredStudents}</p>
             </div>
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
               <Target size={24} className="text-policeGold mx-auto mb-2" />
@@ -412,7 +412,12 @@ export default function AdminDrillAnalyticsPage() {
                             <p className="text-[10px] text-white/40">
                               {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
                                 ? `${student.attempts} ${student.attempts === 1 ? "session" : "sessions"} • ${student.completed} perfected • ${student.submissions ?? 0} total submissions`
-                                : `${student.attempts} ${student.attempts === 1 ? "try" : "tries"} in succession • ${student.completed} completed`}
+                                 : `${student.attempts} ${student.attempts === 1 ? "try" : "tries"} in succession • ${student.completed} completed`}
+                            </p>
+                            <p className="mt-1 text-[10px] font-semibold text-policeGold md:hidden">
+                              {student.mastered
+                                ? `Mastered • ${student.completed} completed ${student.completed === 1 ? "try" : "tries"}`
+                                : `${student.completed} completed ${student.completed === 1 ? "try" : "tries"}`}
                             </p>
                           </div>
                         </div>
@@ -425,7 +430,7 @@ export default function AdminDrillAnalyticsPage() {
                           </div>
                           <div className="hidden md:block">
                             {student.mastered ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-policeGreen bg-policeGreen/10 px-2 py-1 rounded-full border border-policeGreen/20">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-policeGold bg-policeGold/10 px-2 py-1 rounded-full border border-policeGold/20">
                                 <BadgeCheck size={11} /> {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false" ? `Perfected · session ${student.masteredAtTry}` : `Mastered · try ${student.masteredAtTry}`}
                               </span>
                             ) : (

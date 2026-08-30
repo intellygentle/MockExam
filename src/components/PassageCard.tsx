@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ScrollText, MessageSquare, BookOpen,
-  ChevronDown, ChevronUp, Library, PenLine
+  ChevronDown, ChevronUp, Library, PenLine, ExternalLink
 } from "lucide-react";
 
 type DrillSet = {
@@ -45,6 +45,14 @@ export default function PassageCard({
   studentName,
   onDone,
 }: Props) {
+  const markCompleted = async () => {
+    await fetch("/api/drills/attempts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete_reading", studentName, drillSetId: set.id, totalQuestions: questions.length }),
+    });
+    onDone();
+  };
   const [showQuestions, setShowQuestions] = useState(true);
   const [showVocabulary, setShowVocabulary] = useState(false);
   const passageText = set.description || "";
@@ -77,6 +85,12 @@ export default function PassageCard({
         <ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span>
       </button>
       </motion.div>
+
+      {set.title === "To Kill a Mockingbird • Reading Companion" && (
+        <a href="/reading/to-kill-a-mockingbird" className="flex items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/15 px-4 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-400/25">
+          <BookOpen size={17} /> Open PDF.js Reader <ExternalLink size={15} />
+        </a>
+      )}
 
       {/* Vocabulary study guide */}
       {set.title === "Nigeria's Textile Import Dependence" && (
@@ -221,7 +235,7 @@ export default function PassageCard({
         className="text-center pt-4"
       >
         <button
-          onClick={onDone}
+          onClick={markCompleted}
           className="px-6 py-3 rounded-xl bg-rose-500/20 text-rose-300 font-bold hover:bg-rose-500/30 transition border border-rose-500/30"
         >
           <ArrowLeft size={16} className="inline mr-2" />

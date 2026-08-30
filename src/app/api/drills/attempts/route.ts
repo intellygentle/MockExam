@@ -111,6 +111,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, mastered });
     }
 
+    if (action === "complete_reading") {
+      const { studentName, drillSetId, totalQuestions } = body;
+      if (!studentName || !drillSetId) {
+        return NextResponse.json({ error: "studentName and drillSetId required" }, { status: 400 });
+      }
+      const { data: attempt, error } = await supabase
+        .from("drill_attempts")
+        .insert({
+          student_name: studentName,
+          drill_set_id: drillSetId,
+          total_questions: totalQuestions || 1,
+          answered_questions: totalQuestions || 1,
+          correct_answers: totalQuestions || 1,
+          completed: true,
+          mastered: true,
+          completed_at: new Date().toISOString(),
+          started_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return NextResponse.json({ success: true, mastered: true, attempt });
+    }
+
     if (action === "warned") {
       // Increment warning count (sent from client-local counter)
       const { attemptId, warningCount } = body;
@@ -146,7 +170,7 @@ export async function GET(req: Request) {
     const supabaseKey = process.env.SUPABASE_ANON_KEY!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // An attempt is mastered when the card was completed with every question correct
+    // A completed try is a perfect run. In-progress work is not counted as a try.
     const isMastered = (a: any) =>
       !!a.completed && (a.total_questions ?? 0) > 0 && (a.correct_answers ?? 0) >= (a.total_questions ?? 0);
 
@@ -438,7 +462,7 @@ export async function GET(req: Request) {
         .sort((a, b) => b.attempts - a.attempts);
 
       // Summary stats
-      const completedAttempts = (attempts || []).filter((a: any) => a.completed);
+       const completedAttempts = (attempts || []).filter((a: any) => isMastered(a));
       const quitAttempts = (attempts || []).filter((a: any) => !a.completed);
       const masteredAttempts = (attempts || []).filter((a: any) => isMastered(a));
       const masteredStudents = students.filter((s) => s.mastered).length;

@@ -47,6 +47,14 @@ const STUDY_SECONDS = 15;
 // ── COMPONENT ──
 
 export default function VocabularyCard({ set, words, studentName, onDone, gapChunks }: Props) {
+  const markCompleted = async () => {
+    await fetch("/api/drills/attempts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete_reading", studentName, drillSetId: set.id, totalQuestions: words.length }),
+    });
+    onDone();
+  };
   const [currentIdx, setCurrentIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("study");
   const [timeLeft, setTimeLeft] = useState(STUDY_SECONDS);
@@ -59,6 +67,7 @@ export default function VocabularyCard({ set, words, studentName, onDone, gapChu
   const [selectedGapWord, setSelectedGapWord] = useState<string | null>(null);
   const [gapFeedback, setGapFeedback] = useState<"idle" | "correct" | "wrong">("idle");
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+  const [filledGaps, setFilledGaps] = useState<Record<number, string>>({});
 
   const currentWord = words[currentIdx] ?? null;
   const vocabProgress = words.length > 0 ? ((currentIdx) / words.length) * 100 : 0;
@@ -128,6 +137,7 @@ export default function VocabularyCard({ set, words, studentName, onDone, gapChu
     if (selectedGapWord.toLowerCase() === currentChunk.gapWord.toLowerCase()) {
       setGapFeedback("correct");
       setUsedWords((prev) => new Set(prev).add(selectedGapWord.toLowerCase()));
+      setFilledGaps((prev) => ({ ...prev, [gapChunkIdx]: selectedGapWord }));
     } else {
       setGapFeedback("wrong");
     }
@@ -153,6 +163,7 @@ export default function VocabularyCard({ set, words, studentName, onDone, gapChu
     setSelectedGapWord(null);
     setGapFeedback("idle");
     setUsedWords(new Set());
+    setFilledGaps({});
     setPhase("gapfill");
   };
 
@@ -245,11 +256,12 @@ export default function VocabularyCard({ set, words, studentName, onDone, gapChu
               {revealedChunks.map((chunk, i) => {
                 const isLast = i === revealedChunks.length - 1;
                 const hasGap = !!chunk.gapWord;
-                const gapFilledForThis = hasGap && isLast && currentGapFilled;
+                const filledWord = filledGaps[i];
+                const gapFilledForThis = hasGap && !!filledWord;
                 const displayText = (() => {
-                  if (!hasGap) return chunk.text;
-                  if (gapFilledForThis && selectedGapWord) {
-                    return chunk.text.replace("___", selectedGapWord);
+                   if (!hasGap) return chunk.text;
+                   if (gapFilledForThis && filledWord) {
+                     return chunk.text.replace("___", filledWord);
                   }
                   // Show the gap marker with underline
                   return chunk.text.replace("___", "________");
@@ -392,7 +404,7 @@ export default function VocabularyCard({ set, words, studentName, onDone, gapChu
           <p className="text-white/60">
             You mastered all {words.length} words and completed the fill-in-the-gap passage.
           </p>
-          <button onClick={onDone}
+          <button onClick={markCompleted}
             className="mt-4 px-8 py-3 rounded-xl bg-policeGold text-policeBlue font-bold hover:brightness-110 transition flex items-center justify-center gap-2 mx-auto">
             <BookOpen size={16} /> Return to Arena
           </button>
@@ -516,7 +528,7 @@ export default function VocabularyCard({ set, words, studentName, onDone, gapChu
                   className="w-full py-3 rounded-xl bg-purple-500 text-white font-bold hover:brightness-110 transition flex items-center justify-center gap-2">
                   <Sword size={18} /> Take the Final Test
                 </button>
-                <button onClick={onDone}
+               <button onClick={markCompleted}
                   className="w-full py-3 rounded-xl bg-white/10 text-white/70 font-bold hover:bg-white/20 transition flex items-center justify-center gap-2">
                   <BookOpen size={16} /> Return to Arena
                 </button>

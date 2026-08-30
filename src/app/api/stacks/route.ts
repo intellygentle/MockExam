@@ -86,8 +86,16 @@ export async function GET(req: Request) {
             if (studentName.trim()) {
               // Passage & vocab cards are not auto-graded
               if (isPassageCard || isVocabCard) {
-                totalAttempts = 0;
-                mastered = false;
+                const { data: attempts } = await supabase
+                  .from("drill_attempts")
+                  .select("completed, mastered, total_questions, correct_answers")
+                  .eq("student_name", studentName.trim())
+                  .eq("drill_set_id", set.id);
+                const completedAttempts = (attempts || []).filter((a: any) =>
+                  !!a.completed && !!a.mastered && (a.total_questions ?? 0) > 0 && (a.correct_answers ?? 0) >= (a.total_questions ?? 0)
+                );
+                totalAttempts = completedAttempts.length;
+                mastered = completedAttempts.length > 0;
               } else if (isLessonCard) {
                 const { data: attempts } = await supabase
                   .from("capitalization_attempts")
