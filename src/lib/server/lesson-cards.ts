@@ -6,6 +6,7 @@ import { errorCorrectionCard } from "./error-correction-card";
 import { paraGapfillCard, type ParaGapfillData } from "./para-gapfill-card";
 import { getMcqPart1, getMcqPart2 } from "./sentence-expansion-mcq-card";
 import { buildFreeWritePart1, buildFreeWritePart2, getRandomNudge } from "./sentence-expansion-card";
+import { concordTrueFalseRulesCard, concordTrueFalseSentencesCard } from "./concord-cards";
 
 /**
  * ============================================================
@@ -1279,4 +1280,10 @@ const CARDS: Record<string, LessonCardDef> = {
   // ════════════════════════════════════════════════
   "sentence-expansion-part1": buildFreeWritePart1(),
   "sentence-expansion-part2": buildFreeWritePart2(),
+
+  // ════════════════════════════════════════════════
+  // Concord True/False cards (sentence judgments + rule statements)
+  // ════════════════════════════════════════════════
+  "concord-true-false-sentences": concordTrueFalseSentencesCard,
+  "concord-true-false-rules": concordTrueFalseRulesCard,
 };
