@@ -479,7 +479,8 @@ export default function DrillPage() {
     set.card_type === "error_correction" ||
     set.card_type === "para_gapfill" ||
     set.card_type === "sentence_expansion" ||
-    set.card_type === "sentence_expansion_mcq";
+    set.card_type === "sentence_expansion_mcq" ||
+    set.card_type === "word_table";
 
   const isCombineSeqCard = (set: any) =>
     set.card_type === "combine_seq";
@@ -526,6 +527,9 @@ export default function DrillPage() {
     }
     if (set.card_type === "sentence_expansion_mcq") {
       return { label: "📝 Sentence MCQ", classes: "bg-teal-500/15 text-teal-300" };
+    }
+    if (set.card_type === "word_table") {
+      return { label: "🔤 Words Table", classes: "bg-orange-500/15 text-orange-300" };
     }
     if (set.card_type === "true_false") {
       return { label: "⚖️ True or False", classes: "bg-emerald-500/15 text-emerald-300" };
@@ -875,7 +879,7 @@ export default function DrillPage() {
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <BrainCircuit size={14} className="text-blue-400 mx-auto mb-0.5" />
                       <p className="text-sm font-bold text-white">{set.question_count}</p>
-                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isVocabCard(set) ? "Vocab Words" : isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : "Sentences") : "Questions"}</p>
+                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isVocabCard(set) ? "Vocab Words" : isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : set.card_type === "word_table" ? "Forms" : "Sentences") : "Questions"}</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <Clock size={14} className="text-policeGold mx-auto mb-0.5" />
@@ -1594,7 +1598,7 @@ function LessonSetCard({
               </span>
             )}
             <span className="text-[10px] text-white/40">
-              {set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : "sentences") : "questions"}
+              {set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : set.card_type === "word_table" ? "forms" : "sentences") : "questions"}
             </span>
           </div>
         </div>

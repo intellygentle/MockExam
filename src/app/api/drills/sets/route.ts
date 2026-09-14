@@ -33,7 +33,7 @@ export async function GET(req: Request) {
         }
 
         const cardType = set.card_type || "quiz";
-        const isLessonCard = cardType === "capitalization" || cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq";
+        const isLessonCard = cardType === "capitalization" || cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table";
         const isPassageCard = cardType === "passage";
         const isVocabCard = cardType === "vocabulary";
         // For lesson cards the item count comes from the server store

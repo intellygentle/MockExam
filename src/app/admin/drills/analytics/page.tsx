@@ -148,7 +148,8 @@ const isLessonCardSet = (t: string | null | undefined) =>
   t === "capitalization" ||
   t === "sentence_types" ||
   t === "sentence_combining" ||
-  t === "true_false";
+  t === "true_false" ||
+  t === "word_table";
 
 export default function AdminDrillAnalyticsPage() {
   const [sets, setSets] = useState<DrillSetSummary[]>([]);

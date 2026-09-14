@@ -6,6 +6,7 @@ import { errorCorrectionCard } from "./error-correction-card";
 import { paraGapfillCard, type ParaGapfillData } from "./para-gapfill-card";
 import { getMcqPart1, getMcqPart2 } from "./sentence-expansion-mcq-card";
 import { buildFreeWritePart1, buildFreeWritePart2, getRandomNudge } from "./sentence-expansion-card";
+import { editorialWordFamiliesCard, gradeWordForm } from "./word-table-cards";
 
 /**
  * ============================================================
@@ -96,9 +97,16 @@ export type LessonQuestion = {
   };
   /** MCQ options for sentence expansion MCQ cards (stored as {a,b,c,d}). */
   mcqOptions?: { a: string; b: string; c: string; d: string };
+  /** Word-table cards: the form the student's sentence must use. */
+  wordForm?: {
+    pos: "noun" | "verb" | "adjective" | "adverb";
+    lemma: string;
+    /** Accepted spellings/inflections (matched on word boundaries). */
+    accepted: string[];
+  };
 };
 
-export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table";
 
 export type LessonCardDef = {
   slug: string;
@@ -494,6 +502,9 @@ export function gradeQuestionWithHints(
     const result = gradeErrorCorrection(studentText, question);
     return { correct: result.correct, hints: [] };
   }
+  if (card.kind === "word_table") {
+    return gradeWordForm(studentText, question);
+  }
   if (card.kind === "capitalize") {
     const correct = checkLine(studentText, {
       prompt: question.prompt,
@@ -534,7 +545,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -1106,6 +1117,7 @@ const CARDS: Record<string, LessonCardDef> = {
   },
 
   [clauseCombiningCard.slug]: clauseCombiningCard,
+  [editorialWordFamiliesCard.slug]: editorialWordFamiliesCard,
   [relationshipCombiningCard.slug]: relationshipCombiningCard,
 
   // ════════════════════════════════════════════════════════════════
