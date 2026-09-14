@@ -56,7 +56,18 @@ export default function PassageCard({
   const [showQuestions, setShowQuestions] = useState(true);
   const [showVocabulary, setShowVocabulary] = useState(false);
   const passageText = set.description || "";
-  const articleImage = set.title === "Nigeria's Textile Import Dependence" ? "/editorials/image.png" : "";
+  const ARTICLE_IMAGES: Record<string, { src: string; alt: string }> = {
+    "Nigeria's Textile Import Dependence": {
+      src: "/editorials/image.png",
+      alt: "Traditional textile garments displayed for sale",
+    },
+    "Sickle Cell Epidemic: Tackling Fake Lab Results": {
+      src: "/editorials/1000364270.jpg",
+      alt: "Crescent-shaped sickled red blood cell",
+    },
+  };
+  const articleImage = ARTICLE_IMAGES[set.title]?.src || "";
+  const articleImageAlt = ARTICLE_IMAGES[set.title]?.alt || "Article image";
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 py-4 sm:py-6 px-2 sm:px-0">
@@ -139,7 +150,7 @@ export default function PassageCard({
         className="card border-rose-500/20 bg-gradient-to-br from-rose-500/5 to-pink-500/5"
       >
         {articleImage && (
-          <img src={articleImage} alt="Traditional textile garments displayed for sale" className="w-full max-h-80 object-cover rounded-xl mb-5 border border-white/10" />
+          <img src={articleImage} alt={articleImageAlt} className="w-full max-h-80 object-cover rounded-xl mb-5 border border-white/10" />
         )}
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
           <BookOpen size={18} className="text-rose-400" />
@@ -209,7 +220,7 @@ export default function PassageCard({
                           {q.instruction}
                         </p>
                       )}
-                      <p className="text-white/85 text-[15px] leading-relaxed">
+                      <p className="text-white/85 text-[15px] leading-relaxed whitespace-pre-line">
                         {q.question}
                       </p>
                       {/* Answer area hint */}

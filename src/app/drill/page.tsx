@@ -8,7 +8,7 @@ import {
   Loader2, RotateCcw, BookOpen, BrainCircuit,
   Hourglass, Flame, Sparkles, ChevronRight, ChevronDown,
   TrendingUp, TrendingDown, Minus, BadgeCheck, PencilLine,
-  Layers, PenLine, Crown, type LucideIcon
+  Layers, PenLine, Crown, Volume2, type LucideIcon
 } from "lucide-react";
 import QuestionCard from "@/components/QuestionCard";
 import LessonCard from "@/components/LessonCard";
@@ -17,6 +17,7 @@ import VocabularyCard from "@/components/VocabularyCard";
 import CombineCard from "@/components/CombineCard";
 import ParaGapfillCard from "@/components/ParaGapfillCard";
 import SentenceExpansionCard from "@/components/SentenceExpansionCard";
+import SpellingCard from "@/components/SpellingCard";
 import type { OptionKey, OptionsRecord } from "@/lib/questions";
 import confetti from "canvas-confetti";
 
@@ -68,7 +69,7 @@ type DrillQuestion = {
   category: string;
 };
 
-type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "para_gapfill" | "sentence_expansion" | "results";
+type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "spelling" | "para_gapfill" | "sentence_expansion" | "results";
 
 type StackDrillSet = {
   id: number;
@@ -220,7 +221,8 @@ export default function DrillPage() {
         meaning: q.explanation || "",
       }))
     );
-    setPhase("vocabulary");
+    // Spelling Bee cards (word + transcription) use the SpellingCard flow
+    setPhase(set.capitalization_slug === "spelling" ? "spelling" : "vocabulary");
   };
 
   const handleStartPassage = async (set: DrillSet) => {
@@ -498,6 +500,18 @@ export default function DrillPage() {
       return { label: "📖 Reading Passage", classes: "bg-rose-500/15 text-rose-300" };
     }
     if (set.card_type === "vocabulary") {
+      if (set.capitalization_slug === "spelling") {
+        return { label: "🐝 Spelling Bee", classes: "bg-sky-500/15 text-sky-300" };
+      }
+      if (set.capitalization_slug === "flash") {
+        return { label: "⚡ Flash Vocabulary", classes: "bg-amber-500/15 text-amber-300" };
+      }
+      if (set.capitalization_slug === "matching") {
+        return { label: "🔗 Matching Exercise", classes: "bg-teal-500/15 text-teal-300" };
+      }
+      if (set.capitalization_slug === "blanks") {
+        return { label: "📝 Fill in the Blanks", classes: "bg-indigo-500/15 text-indigo-300" };
+      }
       return { label: "📒 Key Vocabulary", classes: "bg-amber-500/15 text-amber-300" };
     }
     return null;
@@ -1029,13 +1043,21 @@ export default function DrillPage() {
 
   // ── VOCABULARY CARD PHASE ──
   if (phase === "vocabulary" && selectedSet) {
-    // Parse gapfill chunks from lesson_content JSON
+    // Parse exercise data from lesson_content JSON:
+    // a plain array = fill-in-the-gap chunks; an object with matchQuestions =
+    // matching exercise options.
     let gapChunks: { text: string; gapWord: string | null }[] | undefined;
+    let matchQuestions: { word: string; options: string[]; answerIndex: number }[] | undefined;
     try {
       if (selectedSet.lesson_content) {
-        gapChunks = JSON.parse(selectedSet.lesson_content);
+        const parsed = JSON.parse(selectedSet.lesson_content);
+        if (Array.isArray(parsed)) {
+          gapChunks = parsed;
+        } else if (parsed && Array.isArray(parsed.matchQuestions)) {
+          matchQuestions = parsed.matchQuestions;
+        }
       }
-    } catch { /* no gapfill */ }
+    } catch { /* no embedded exercise */ }
 
     return (
       <VocabularyCard
@@ -1043,11 +1065,45 @@ export default function DrillPage() {
         words={vocabWords}
         studentName={studentName}
         gapChunks={gapChunks}
+        flashMode={selectedSet.capitalization_slug === "flash"}
+        matchingMode={selectedSet.capitalization_slug === "matching"}
+        blanksMode={selectedSet.capitalization_slug === "blanks"}
+        matchQuestions={matchQuestions}
         onDone={() => {
           setPhase("select");
           setSelectedSet(null);
           setVocabWords([]);
           loadDrillSets();
+        }}
+      />
+    );
+  }
+
+  // ── SPELLING BEE CARD PHASE ──
+  if (phase === "spelling" && selectedSet) {
+    // Parse the 6 category names/descriptions from lesson_content JSON
+    let spellingCategories: { name: string; description: string }[] = [];
+    try {
+      if (selectedSet.lesson_content) {
+        const parsed = JSON.parse(selectedSet.lesson_content);
+        if (parsed && Array.isArray(parsed.categories)) {
+          spellingCategories = parsed.categories;
+        }
+      }
+    } catch { /* no category metadata */ }
+
+    return (
+      <SpellingCard
+        set={selectedSet}
+        words={vocabWords}
+        studentName={studentName}
+        categories={spellingCategories}
+        onDone={() => {
+          setPhase("select");
+          setSelectedSet(null);
+          setVocabWords([]);
+          loadDrillSets();
+          loadStacks();
         }}
       />
     );
@@ -1426,7 +1482,7 @@ function LessonSetCard({
               </span>
             )}
             <span className="text-[10px] text-white/40">
-              {set.question_count} {isVocabCard(set) ? "words" : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : "sentences") : "questions"}
+              {set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : "sentences") : "questions"}
             </span>
           </div>
         </div>
@@ -1459,12 +1515,12 @@ function LessonSetCard({
           {set.mastered ? (
             <>
               <RotateCcw size={13} />
-              {isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write Again" : isParaGapfillCard({ card_type: set.card_type }) ? "Practice Again" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Practice Again" : isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Practice Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
+              {set.capitalization_slug === "spelling" ? "Spell Again" : isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write Again" : isParaGapfillCard({ card_type: set.card_type }) ? "Practice Again" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Practice Again" : isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Practice Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
             </>
           ) : (
             <>
-              {isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
-              {isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write" : isParaGapfillCard({ card_type: set.card_type }) ? "Fill Blanks" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Correct" : isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Choose" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
+              {set.capitalization_slug === "spelling" ? <Volume2 size={13} /> : isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
+              {set.capitalization_slug === "spelling" ? "Spell" : isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write" : isParaGapfillCard({ card_type: set.card_type }) ? "Fill Blanks" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Correct" : isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Choose" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
             </>
           )}
         </button>

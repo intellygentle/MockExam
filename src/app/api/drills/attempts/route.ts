@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getLessonCard } from "@/lib/server/lesson-cards";
 
+/**
+ * Vocabulary card variants tracked as interactive runs (per-word answers,
+ * wrong picks, restarts, stage runs) rather than plain completion markers.
+ */
+const VOCAB_TRACKED_SLUGS = ["flash", "matching", "blanks", "spelling"];
+
+/** Distinct-correct count: a word counts once even when answered again
+ *  after a restart, and repeat wrong picks don't dilute correctness. */
+const distinctCorrect = (answers: any[]) =>
+  new Set((answers || []).filter((a: any) => a.correct).map((a: any) => a.question_id)).size;
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -54,14 +65,15 @@ export async function POST(req: Request) {
 
       if (error) throw error;
 
-      // Update attempt counts
+      // Update attempt counts (correct = distinct words answered correctly,
+      // so restarts and repeated wrong picks don't skew the numbers)
       const { data: answers } = await supabase
         .from("drill_attempt_answers")
-        .select("id, correct")
+        .select("question_id, correct")
         .eq("attempt_id", attemptId);
 
       const answeredCount = (answers || []).length;
-      const correctCount = (answers || []).filter((a: any) => a.correct).length;
+      const correctCount = distinctCorrect(answers || []);
 
       await supabase
         .from("drill_attempts")
@@ -82,14 +94,15 @@ export async function POST(req: Request) {
       }
 
       // Recompute authoritative counts from the recorded answers so mastery
-      // never depends on client-sent values.
+      // never depends on client-sent values. Correct = distinct words with a
+      // correct answer (restarts re-answer words; each word counts once).
       const [{ data: answers }, { data: attemptRow }] = await Promise.all([
-        supabase.from("drill_attempt_answers").select("correct").eq("attempt_id", attemptId),
+        supabase.from("drill_attempt_answers").select("question_id, correct").eq("attempt_id", attemptId),
         supabase.from("drill_attempts").select("total_questions").eq("id", attemptId).maybeSingle(),
       ]);
 
       const answered = (answers || []).length;
-      const correct = (answers || []).filter((a: any) => a.correct).length;
+      const correct = distinctCorrect(answers || []);
       const totalQuestions = attemptRow?.total_questions || 0;
       // Mastered = answered every question in the card correctly
       const mastered = totalQuestions > 0 && correct >= totalQuestions;
@@ -109,6 +122,40 @@ export async function POST(req: Request) {
 
       if (error) throw error;
       return NextResponse.json({ success: true, mastered });
+    }
+
+    if (action === "complete_stage") {
+      // Complete a run within a multi-stage card (e.g. one Spelling Bee
+      // stage). Same accounting as "complete", but the run never marks the
+      // CARD mastered — card mastery comes from the separate all-stages
+      // completion marker (complete_reading).
+      const { attemptId, timeSpentSeconds } = body;
+      if (!attemptId) {
+        return NextResponse.json({ error: "attemptId required" }, { status: 400 });
+      }
+
+      const { data: answers } = await supabase
+        .from("drill_attempt_answers")
+        .select("question_id, correct")
+        .eq("attempt_id", attemptId);
+
+      const answered = (answers || []).length;
+      const correct = distinctCorrect(answers || []);
+
+      const { error } = await supabase
+        .from("drill_attempts")
+        .update({
+          completed: true,
+          completed_at: new Date().toISOString(),
+          time_spent_seconds: timeSpentSeconds || 0,
+          answered_questions: answered,
+          correct_answers: correct,
+          mastered: false,
+        })
+        .eq("id", attemptId);
+
+      if (error) throw error;
+      return NextResponse.json({ success: true, mastered: false });
     }
 
     if (action === "complete_reading") {
@@ -348,6 +395,290 @@ export async function GET(req: Request) {
         });
       }
 
+      // ── Tracked vocabulary cards (flash / matching / blanks / spelling) ──
+      // These cards record interactive runs: a start row, one answer row per
+      // graded event (wrong picks and misspellings included), and a complete
+      // row. Spelling Bee stage runs complete via "complete_stage" and never
+      // mark the card mastered — the all-stages marker (complete_reading)
+      // does. Markers are answer-less and excluded from run history.
+      const isTrackedVocabCard =
+        drillCardType === "vocabulary" && VOCAB_TRACKED_SLUGS.includes((drillSet as any)?.capitalization_slug || "");
+      if (drillSet && isTrackedVocabCard) {
+        const vocabMode = (drillSet as any).capitalization_slug as string;
+
+        const [{ data: vocabAttempts }, { data: links }] = await Promise.all([
+          supabase
+            .from("drill_attempts")
+            .select("*")
+            .eq("drill_set_id", setIdNum)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("drill_set_questions")
+            .select("question_id, question_number")
+            .eq("drill_set_id", setIdNum),
+        ]);
+
+        const attemptIds = (vocabAttempts || []).map((a: any) => a.id);
+        const { data: allAnswers } = await supabase
+          .from("drill_attempt_answers")
+          .select("attempt_id, question_id, selected_option, correct, answered_at")
+          .in("attempt_id", attemptIds.length > 0 ? attemptIds : [0]);
+
+        // Stage lookup (spelling): question_id → 0-based stage index
+        const stageByQuestion = new Map<number, number>();
+        for (const l of links || []) {
+          stageByQuestion.set(l.question_id, Math.floor(((l.question_number || 1) - 1) / 20));
+        }
+
+        const answersByAttempt = new Map<number, any[]>();
+        for (const ans of allAnswers || []) {
+          const list = answersByAttempt.get(ans.attempt_id) || [];
+          list.push(ans);
+          answersByAttempt.set(ans.attempt_id, list);
+        }
+        const hasAnswers = (id: number) => (answersByAttempt.get(id) || []).length > 0;
+
+        // Markers = card-level completion rows with no recorded answers
+        const isMarker = (a: any) => !!a.completed && !!a.mastered && !hasAnswers(a.id);
+        const markers = (vocabAttempts || []).filter(isMarker);
+        const runs = (vocabAttempts || []).filter((a: any) => !isMarker(a));
+
+        // Question labels (word + transcription) for missed-word reporting
+        const labelIds = Array.from(new Set((allAnswers || []).map((a: any) => a.question_id)));
+        const { data: labelQuestions } = await supabase
+          .from("questions")
+          .select("id, question, explanation")
+          .in("id", labelIds.length > 0 ? labelIds : [0]);
+        const labelById = new Map<number, any>();
+        for (const q of labelQuestions || []) labelById.set(q.id, q);
+
+        // Stage/category names (spelling)
+        let categories: any[] = [];
+        try {
+          if ((drillSet as any).lesson_content) {
+            const parsed = JSON.parse((drillSet as any).lesson_content);
+            if (parsed && Array.isArray(parsed.categories)) categories = parsed.categories;
+          }
+        } catch { /* ignore */ }
+
+        // Chronological try numbering per student
+        const vocabByStudent = new Map<string, any[]>();
+        for (const a of runs) {
+          const list = vocabByStudent.get(a.student_name) || [];
+          list.push(a);
+          vocabByStudent.set(a.student_name, list);
+        }
+        for (const list of vocabByStudent.values()) {
+          list.sort((x: any, y: any) => new Date(x.created_at).getTime() - new Date(y.created_at).getTime());
+        }
+
+        const lastAnswerByAttempt = new Map<number, string>();
+        for (const [id, list] of answersByAttempt.entries()) {
+          for (const ans of list) {
+            const cur = lastAnswerByAttempt.get(id);
+            if (!cur || new Date(ans.answered_at) > new Date(cur)) lastAnswerByAttempt.set(id, ans.answered_at);
+          }
+        }
+
+        // Per-run enrichment
+        const enrichedRuns = runs.map((a: any) => {
+          const ans = answersByAttempt.get(a.id) || [];
+          const correctIds = new Set(ans.filter((x: any) => x.correct).map((x: any) => x.question_id));
+          const wrongPicks = ans.filter((x: any) => !x.correct).length;
+          const stageNums = ans.map((x: any) => stageByQuestion.get(x.question_id)).filter((s: any) => s !== undefined);
+          const stage = vocabMode === "spelling" && stageNums.length > 0 ? Math.min(...(stageNums as number[])) : null;
+          const start = new Date(a.started_at);
+          const end = a.completed_at
+            ? new Date(a.completed_at)
+            : lastAnswerByAttempt.get(a.id)
+              ? new Date(lastAnswerByAttempt.get(a.id)!)
+              : start;
+          const durationSeconds = Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000));
+          const total = a.total_questions || ans.length;
+          const scorePercent = Math.round((correctIds.size / Math.max(total, 1)) * 100);
+          return {
+            ...a,
+            correct_answers: correctIds.size,
+            answered_questions: ans.length,
+            wrongPicks,
+            stage,
+            stageLabel: stage !== null ? categories[stage]?.name || `Stage ${stage + 1}` : null,
+            scorePercent,
+            startTime: a.started_at,
+            endTime: end.toISOString(),
+            durationSeconds,
+            mastered: !!a.mastered,
+            quit: !a.completed,
+          };
+        });
+
+        // Most-missed words: wrong picks grouped by word, with samples of
+        // what the student actually typed/picked.
+        const missMap = new Map<number, { count: number; examples: string[] }>();
+        for (const ans of allAnswers || []) {
+          if (ans.correct) continue;
+          const entry = missMap.get(ans.question_id) || { count: 0, examples: [] };
+          entry.count += 1;
+          if (ans.selected_option && ans.selected_option.trim() && entry.examples.length < 3) {
+            entry.examples.push(ans.selected_option.trim());
+          }
+          missMap.set(ans.question_id, entry);
+        }
+        const mostMissed = Array.from(missMap.entries())
+          .map(([qid, e]) => ({
+            questionId: qid,
+            label: labelById.get(qid)?.question || `Question ${qid}`,
+            transcription: labelById.get(qid)?.explanation || "",
+            timesMissed: e.count,
+            examples: e.examples,
+          }))
+          .sort((a, b) => b.timesMissed - a.timesMissed)
+          .slice(0, 10);
+
+        // Per-stage stats (spelling only)
+        let stages: any[] = [];
+        if (vocabMode === "spelling") {
+          const stageGroups = new Map<number, any[]>();
+          for (const run of enrichedRuns) {
+            if (run.stage === null || run.stage === undefined) continue;
+            const list = stageGroups.get(run.stage) || [];
+            list.push(run);
+            stageGroups.set(run.stage, list);
+          }
+          stages = Array.from(stageGroups.entries())
+            .sort((a, b) => a[0] - b[0])
+            .map(([stageIdx, list]) => {
+              const completedRuns = list.filter((r: any) => r.completed);
+              // A stage is only "passed" on a perfect run — the client only
+              // unlocks the next stage after a faultless attempt.
+              const perfectRuns = completedRuns.filter((r: any) => r.scorePercent === 100);
+              const avgScore = completedRuns.length > 0
+                ? Math.round(completedRuns.reduce((s: number, r: any) => s + r.scorePercent, 0) / completedRuns.length)
+                : 0;
+              const avgTime = completedRuns.length > 0
+                ? Math.round(completedRuns.reduce((s: number, r: any) => s + (r.durationSeconds || 0), 0) / completedRuns.length)
+                : 0;
+              return {
+                stage: stageIdx + 1,
+                name: categories[stageIdx]?.name || `Stage ${stageIdx + 1}`,
+                attempts: list.length,
+                completedAttempts: completedRuns.length,
+                perfectRuns: perfectRuns.length,
+                avgScorePercent: avgScore,
+                avgTimeSeconds: avgTime,
+                wrongPicks: list.reduce((s: number, r: any) => s + (r.wrongPicks || 0), 0),
+                studentsCompleted: new Set(perfectRuns.map((r: any) => r.student_name)).size,
+                students: new Set(list.map((r: any) => r.student_name)).size,
+              };
+            });
+        }
+
+        // Per-student stats
+        const studentMap = new Map<string, any>();
+        for (const a of enrichedRuns) {
+          const name = a.student_name;
+          if (!studentMap.has(name)) {
+            studentMap.set(name, {
+              studentName: name,
+              attempts: 0,
+              bestScore: 0,
+              bestTime: 0,
+              completed: 0,
+              totalWarnings: 0,
+              wrongPicks: 0,
+              stagesCompleted: new Set<number>(),
+              stagesCompletedCount: 0,
+              mastered: false,
+              masteredAtTry: null,
+              retriesBeforeStop: 0,
+              attemptHistory: [],
+            });
+          }
+          const stats = studentMap.get(name)!;
+          stats.attempts += 1;
+          if (a.completed) {
+            stats.completed += 1;
+            if (a.scorePercent > stats.bestScore) {
+              stats.bestScore = a.scorePercent;
+              stats.bestTime = a.durationSeconds || 0;
+            }
+          } else {
+            stats.bestScore = Math.max(stats.bestScore, a.scorePercent);
+          }
+          stats.wrongPicks += a.wrongPicks || 0;
+          // Only perfect runs pass a stage (client unlocks progressively)
+          if (a.stage !== null && a.stage !== undefined && a.completed && a.scorePercent === 100) {
+            stats.stagesCompleted.add(a.stage);
+          }
+        }
+
+        for (const [name, stats] of studentMap.entries()) {
+          const chronoRuns = enrichedRuns
+            .filter((r: any) => r.student_name === name)
+            .sort((x: any, y: any) => new Date(x.created_at).getTime() - new Date(y.created_at).getTime());
+          stats.attemptHistory = chronoRuns.map((r: any, i: number) => ({
+            tryNumber: i + 1,
+            completed: !!r.completed,
+            quit: !r.completed,
+            correctAnswers: r.correct_answers,
+            totalQuestions: r.total_questions,
+            scorePercent: r.scorePercent,
+            timeSpentSeconds: r.durationSeconds || 0,
+            mastered: !!r.mastered,
+            wrongPicks: r.wrongPicks,
+            stage: r.stage !== null && r.stage !== undefined ? r.stage + 1 : null,
+            stageLabel: r.stageLabel,
+            startedAt: r.started_at,
+            completedAt: r.completed_at,
+          }));
+          const masteredIdx = stats.attemptHistory.findIndex((h: any) => h.mastered);
+          const hasMarker = markers.some((m: any) => m.student_name === name);
+          stats.mastered = masteredIdx >= 0 || hasMarker;
+          stats.masteredAtTry = masteredIdx >= 0 ? masteredIdx + 1 : null;
+          stats.retriesBeforeStop = masteredIdx >= 0 ? masteredIdx : stats.attemptHistory.length;
+          stats.stagesCompletedCount = stats.stagesCompleted.size;
+        }
+
+        const students = Array.from(studentMap.values()).sort((a: any, b: any) => b.attempts - a.attempts);
+
+        // Summary
+        const completedRuns = enrichedRuns.filter((a: any) => a.completed);
+        const quitRuns = enrichedRuns.filter((a: any) => !a.completed);
+        const wrongPicksTotal = enrichedRuns.reduce((s: number, a: any) => s + (a.wrongPicks || 0), 0);
+        const masteredStudents = students.filter((s: any) => s.mastered).length;
+        const avgTime = completedRuns.length > 0
+          ? Math.round(completedRuns.reduce((s: number, a: any) => s + (a.durationSeconds || 0), 0) / completedRuns.length)
+          : 0;
+        const avgScore = completedRuns.length > 0
+          ? Math.round(completedRuns.reduce((s: number, a: any) => s + a.scorePercent, 0) / completedRuns.length)
+          : 0;
+        const avgQuitTime = quitRuns.length > 0
+          ? Math.round(quitRuns.reduce((s: number, a: any) => s + (a.durationSeconds || 0), 0) / quitRuns.length)
+          : 0;
+
+        return NextResponse.json({
+          drillSet: { ...drillSet, cardType: "vocabulary", vocabMode },
+          summary: {
+            totalAttempts: enrichedRuns.length,
+            completedAttempts: completedRuns.length,
+            quitAttempts: quitRuns.length,
+            masteredAttempts: enrichedRuns.filter((a: any) => a.mastered).length,
+            masteredStudents,
+            masteryRate: students.length > 0 ? Math.round((masteredStudents / students.length) * 100) : 0,
+            avgTimeSeconds: avgTime,
+            avgScorePercent: avgScore,
+            avgQuitTimeSeconds: avgQuitTime,
+            wrongPicksTotal,
+            avgWrongPicks: enrichedRuns.length > 0 ? Math.round((wrongPicksTotal / enrichedRuns.length) * 10) / 10 : 0,
+            // flash: every wrong recall forces a restart from word 1
+            restartsTotal: vocabMode === "flash" ? wrongPicksTotal : undefined,
+          },
+          students,
+          attempts: enrichedRuns,
+          vocabDetail: { mode: vocabMode, categories, mostMissed, stages },
+        });
+      }
+
       const { data: attempts, error } = await supabase
         .from("drill_attempts")
         .select("*")
@@ -535,6 +866,57 @@ export async function GET(req: Request) {
             totalStudents,
             masteryRate: totalStudents > 0 ? Math.round((masteredStudents / totalStudents) * 100) : 0,
             avgSubmissions: totalAttempts > 0 ? Math.round(totalSubmissions / totalAttempts) : 0,
+          };
+        }
+
+        // Tracked vocabulary cards: stats from interactive runs (markers
+        // excluded so card-completion rows don't skew averages)
+        if (setCardType === "vocabulary" && VOCAB_TRACKED_SLUGS.includes(set.capitalization_slug || "")) {
+          const { data: vocabSetsAttempts } = await supabase
+            .from("drill_attempts")
+            .select("id, student_name, completed, mastered, total_questions, correct_answers, time_spent_seconds, answered_questions")
+            .eq("drill_set_id", set.id);
+          const ids = (vocabSetsAttempts || []).map((a: any) => a.id);
+          const { data: vocabAnswers } = await supabase
+            .from("drill_attempt_answers")
+            .select("attempt_id, correct")
+            .in("attempt_id", ids.length > 0 ? ids : [0]);
+          const answerCountByAttempt = new Map<number, number>();
+          for (const ans of vocabAnswers || []) {
+            answerCountByAttempt.set(ans.attempt_id, (answerCountByAttempt.get(ans.attempt_id) || 0) + 1);
+          }
+          const isMarkerRow = (a: any) =>
+            !!a.completed && !!a.mastered && !((answerCountByAttempt.get(a.id) ?? 0) > 0);
+          const allRows = vocabSetsAttempts || [];
+          const markers = allRows.filter(isMarkerRow);
+          const runs = allRows.filter((a: any) => !isMarkerRow(a));
+          const completedRuns = runs.filter((a: any) => a.completed);
+          const totalRuns = runs.length;
+          const completionRate = totalRuns > 0 ? Math.round((completedRuns.length / totalRuns) * 100) : 0;
+          const avgScore = completedRuns.length > 0
+            ? Math.round(completedRuns.reduce((sum: number, a: any) => sum + ((a.correct_answers / Math.max(a.total_questions, 1)) * 100), 0) / completedRuns.length)
+            : 0;
+          const avgTime = completedRuns.length > 0
+            ? Math.round(completedRuns.reduce((sum: number, a: any) => sum + (a.time_spent_seconds || 0), 0) / completedRuns.length)
+            : 0;
+          const wrongPicks = (vocabAnswers || []).filter((a: any) => !a.correct).length;
+          const masteredStudents = new Set([
+            ...markers.map((m: any) => m.student_name),
+            ...runs.filter((r: any) => r.mastered).map((r: any) => r.student_name),
+          ]).size;
+          const totalStudents = new Set(runs.map((r: any) => r.student_name)).size;
+          return {
+            ...set,
+            totalAttempts: totalRuns,
+            completedAttempts: completedRuns.length,
+            completionRate,
+            avgScore,
+            avgTimeSeconds: avgTime,
+            totalWarnings: 0,
+            masteredStudents,
+            totalStudents,
+            masteryRate: totalStudents > 0 ? Math.round((masteredStudents / totalStudents) * 100) : 0,
+            wrongPicks,
           };
         }
 

@@ -6,7 +6,8 @@ import {
   Loader2, ChevronRight, ArrowLeft, Trophy,
   Flame, Timer, AlertTriangle, CheckCircle2,
   Zap, ChevronDown, ChevronUp, Repeat, BadgeCheck, PenLine,
-  Braces, Merge, Scale
+  Braces, Merge, Scale, Volume2, Link2, ListChecks, Layers,
+  XCircle
 } from "lucide-react";
 
 type DrillSetSummary = {
@@ -15,7 +16,9 @@ type DrillSetSummary = {
   time_limit_minutes: number;
   question_count: number;
   card_type?: string;
+  capitalization_slug?: string;
   avgSubmissions?: number;
+  wrongPicks?: number;
   totalAttempts: number;
   completedAttempts: number;
   completionRate: number;
@@ -38,8 +41,39 @@ type AttemptHistoryEntry = {
   timeSpentSeconds: number;
   mastered: boolean;
   submissions?: number;
+  wrongPicks?: number;
+  stage?: number | null;
+  stageLabel?: string | null;
   startedAt: string;
   completedAt: string | null;
+};
+
+type MostMissedEntry = {
+  questionId: number;
+  label: string;
+  transcription: string;
+  timesMissed: number;
+  examples: string[];
+};
+
+type StageStat = {
+  stage: number;
+  name: string;
+  attempts: number;
+  completedAttempts: number;
+  perfectRuns: number;
+  avgScorePercent: number;
+  avgTimeSeconds: number;
+  wrongPicks: number;
+  studentsCompleted: number;
+  students: number;
+};
+
+type VocabDetail = {
+  mode: string;
+  categories: { name: string; description?: string }[];
+  mostMissed: MostMissedEntry[];
+  stages: StageStat[];
 };
 
 type DrillAnalytics = {
@@ -49,6 +83,7 @@ type DrillAnalytics = {
     time_limit_minutes: number;
     question_count: number;
     cardType?: string;
+    vocabMode?: string;
   } | null;
   summary: {
     totalAttempts: number;
@@ -61,11 +96,16 @@ type DrillAnalytics = {
     avgScorePercent: number;
     avgQuitTimeSeconds: number;
     avgSubmissions?: number;
+    wrongPicksTotal?: number;
+    avgWrongPicks?: number;
+    restartsTotal?: number;
   };
   students: {
     studentName: string;
     attempts: number;
     submissions?: number;
+    wrongPicks?: number;
+    stagesCompletedCount?: number;
     bestScore: number;
     bestTime: number;
     completed: number;
@@ -76,7 +116,27 @@ type DrillAnalytics = {
     attemptHistory: AttemptHistoryEntry[];
   }[];
   attempts: any[];
+  vocabDetail?: VocabDetail;
 };
+
+const VOCAB_TRACKED_SLUGS = ["flash", "matching", "blanks", "spelling"];
+
+type ModeMeta = { label: string; emoji: string; classes: string; icon: typeof Zap };
+
+function vocabModeMeta(mode?: string | null): ModeMeta | null {
+  switch (mode) {
+    case "flash":
+      return { label: "Flash Vocabulary", emoji: "⚡", classes: "bg-amber-500/15 text-amber-300", icon: Zap };
+    case "matching":
+      return { label: "Matching Exercise", emoji: "🔗", classes: "bg-teal-500/15 text-teal-300", icon: Link2 };
+    case "blanks":
+      return { label: "Fill in the Blanks", emoji: "📝", classes: "bg-indigo-500/15 text-indigo-300", icon: ListChecks };
+    case "spelling":
+      return { label: "Spelling Bee", emoji: "🐝", classes: "bg-sky-500/15 text-sky-300", icon: Volume2 };
+    default:
+      return null;
+  }
+}
 
 export default function AdminDrillAnalyticsPage() {
   const [sets, setSets] = useState<DrillSetSummary[]>([]);
@@ -132,6 +192,9 @@ export default function AdminDrillAnalyticsPage() {
     return "text-policeRed";
   };
 
+  const isVocabTracked = (cardType?: string, slug?: string) =>
+    cardType === "vocabulary" && VOCAB_TRACKED_SLUGS.includes(slug || "");
+
   // ── OVERVIEW ──
   if (!selectedSetId) {
     return (
@@ -181,79 +244,92 @@ export default function AdminDrillAnalyticsPage() {
                 </p>
               </div>
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
-                <AlertTriangle size={24} className="text-policeRed mx-auto mb-2" />
-                <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Time Warnings</p>
-                <p className="text-3xl font-bold text-policeRed">{sets.reduce((s, d) => s + d.totalWarnings, 0)}</p>
+                <XCircle size={24} className="text-policeRed mx-auto mb-2" />
+                <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Wrong Picks</p>
+                <p className="text-3xl font-bold text-policeRed">
+                  {sets.reduce((s, d) => s + (d.wrongPicks || 0), 0)}
+                </p>
               </div>
             </div>
 
-            {/* Drill Sets Table */}
+            {/* Drill Sets List */}
             <div className="space-y-3">
-              {sets.map((set) => (
-                <button key={set.id}
-                  onClick={() => loadDetailedAnalytics(set.id)}
-                  className="w-full text-left bg-white/5 border border-white/10 hover:border-blue-400/30 hover:bg-blue-500/5 rounded-2xl p-5 transition group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${
-                        set.card_type === "capitalization"
-                          ? "bg-violet-500/20 text-violet-300"
-                          : set.card_type === "sentence_types"
-                            ? "bg-teal-500/20 text-teal-300"
-                            : set.card_type === "sentence_combining"
-                              ? "bg-sky-500/20 text-sky-300"
-                            : set.card_type === "true_false"
-                              ? "bg-emerald-500/20 text-emerald-300"
-                              : "bg-orange-500/20 text-orange-400"
-                      }`}>
-                        {set.title[0]}
+              {sets.map((set) => {
+                const mode = isVocabTracked(set.card_type, set.capitalization_slug)
+                  ? vocabModeMeta(set.capitalization_slug)
+                  : null;
+                const isPassage = set.card_type === "passage";
+                const isPlainVocab = set.card_type === "vocabulary" && !mode;
+                return (
+                  <button key={set.id}
+                    onClick={() => loadDetailedAnalytics(set.id)}
+                    className="w-full text-left bg-white/5 border border-white/10 hover:border-blue-400/30 hover:bg-blue-500/5 rounded-2xl p-5 transition group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          mode ? mode.classes
+                            : set.card_type === "capitalization" ? "bg-violet-500/20 text-violet-300"
+                            : set.card_type === "sentence_types" ? "bg-teal-500/20 text-teal-300"
+                            : set.card_type === "sentence_combining" ? "bg-sky-500/20 text-sky-300"
+                            : set.card_type === "true_false" ? "bg-emerald-500/20 text-emerald-300"
+                            : isPassage ? "bg-rose-500/20 text-rose-300"
+                            : isPlainVocab ? "bg-amber-500/20 text-amber-300"
+                            : "bg-orange-500/20 text-orange-400"
+                        }`}>
+                          {mode ? <mode.icon size={20} /> : set.title[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-semibold text-white group-hover:text-blue-400 transition-colors truncate">{set.title}</h4>
+                          <p className="text-xs text-white/40">
+                            {set.question_count} {mode ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassage ? "discussion qs" : "questions"} • {set.level.toUpperCase()}
+                            {mode && (
+                              <span className={`ml-2 text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full font-bold ${mode.classes}`}>
+                                {mode.emoji} {mode.label}
+                              </span>
+                            )}
+                            {isPassage && (
+                              <span className="ml-2 text-[9px] uppercase tracking-widest bg-rose-500/15 text-rose-300 px-2 py-0.5 rounded-full font-bold">📖 Reading</span>
+                            )}
+                            {isPlainVocab && (
+                              <span className="ml-2 text-[9px] uppercase tracking-widest bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full font-bold">📒 Vocabulary</span>
+                            )}
+                          </p>
+                          {set.masteredStudents > 0 && (
+                            <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-policeGold bg-policeGold/10 px-2 py-0.5 rounded-full">
+                              <Trophy size={9} /> {set.masteredStudents}/{set.totalStudents || 0} student{set.totalStudents !== 1 ? "s" : ""} mastered
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h4 className="font-semibold text-white group-hover:text-blue-400 transition-colors truncate">{set.title}</h4>
-                        <p className="text-xs text-white/40">
-                          {set.question_count} {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" || set.card_type === "true_false" ? "items" : "questions"} • {set.card_type === "capitalization" || set.card_type === "sentence_types" || set.card_type === "sentence_combining" || set.card_type === "true_false" ? "self-paced" : `${set.time_limit_minutes}m limit`} • {set.level.toUpperCase()}
-                          {set.card_type === "capitalization" && (
-                            <span className="ml-2 text-[9px] uppercase tracking-widest bg-violet-500/15 text-violet-300 px-2 py-0.5 rounded-full font-bold">✍️ Capitalization</span>
-                          )}
-                          {set.card_type === "sentence_types" && (
-                            <span className="ml-2 text-[9px] uppercase tracking-widest bg-teal-500/15 text-teal-300 px-2 py-0.5 rounded-full font-bold">🧩 Sentence Types</span>
-                          )}
-                          {set.card_type === "sentence_combining" && (
-                            <span className="ml-2 text-[9px] uppercase tracking-widest bg-sky-500/15 text-sky-300 px-2 py-0.5 rounded-full font-bold">🔗 Sentence Combining</span>
-                          )}
-                          {set.card_type === "true_false" && (
-                            <span className="ml-2 text-[9px] uppercase tracking-widest bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full font-bold">⚖️ True or False</span>
-                          )}
-                        </p>
-                        {set.masteredStudents > 0 && (
-                           <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-policeGold bg-policeGold/10 px-2 py-0.5 rounded-full">
-                            <Trophy size={9} /> {set.masteredStudents}/{set.totalStudents || 0} student{set.totalStudents !== 1 ? "s" : ""} mastered
-                          </span>
+                      <div className="flex items-center gap-6 shrink-0">
+                        {mode && (set.wrongPicks || 0) > 0 && (
+                          <div className="text-right hidden md:block">
+                            <p className="text-sm font-bold text-policeRed">{set.wrongPicks}</p>
+                            <p className="text-[9px] uppercase tracking-widest text-white/40">Wrong Picks</p>
+                          </div>
                         )}
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm font-bold text-white">{set.totalAttempts}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-white/40">{mode ? "Runs" : "Attempts"}</p>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                          <p className={`text-sm font-bold ${getScoreColor(set.avgScore)}`}>{set.avgScore}%</p>
+                          <p className="text-[9px] uppercase tracking-widest text-white/40">Avg Score</p>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm font-bold text-white/70">{formatTime(set.avgTimeSeconds)}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-white/40">Avg Time</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-bold ${set.completionRate >= 80 ? "text-policeGreen" : set.completionRate >= 50 ? "text-policeGold" : "text-policeRed"}`}>{set.completionRate}%</p>
+                          <p className="text-[9px] uppercase tracking-widest text-white/40">Complete</p>
+                        </div>
+                        <ChevronRight size={18} className="text-white/30 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 shrink-0">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm font-bold text-white">{set.totalAttempts}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-white/40">Attempts</p>
-                      </div>
-                      <div className="text-right hidden sm:block">
-                        <p className={`text-sm font-bold ${getScoreColor(set.avgScore)}`}>{set.avgScore}%</p>
-                        <p className="text-[9px] uppercase tracking-widest text-white/40">Avg Score</p>
-                      </div>
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm font-bold text-white/70">{formatTime(set.avgTimeSeconds)}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-white/40">Avg Time</p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-bold ${set.completionRate >= 80 ? "text-policeGreen" : set.completionRate >= 50 ? "text-policeGold" : "text-policeRed"}`}>{set.completionRate}%</p>
-                        <p className="text-[9px] uppercase tracking-widest text-white/40">Complete</p>
-                      </div>
-                      <ChevronRight size={18} className="text-white/30 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
@@ -263,6 +339,10 @@ export default function AdminDrillAnalyticsPage() {
 
   // ── DETAILED ANALYTICS ──
   const drillSet = analytics?.drillSet ?? null;
+  const mode = drillSet?.vocabMode ? vocabModeMeta(drillSet.vocabMode) : null;
+  const vocabDetail = analytics?.vocabDetail;
+  const isSpelling = drillSet?.vocabMode === "spelling";
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       <button onClick={() => { setSelectedSetId(null); setAnalytics(null); }}
@@ -285,31 +365,23 @@ export default function AdminDrillAnalyticsPage() {
           <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-full ${
-                drillSet.cardType === "capitalization"
-                  ? "bg-violet-500/20 text-violet-300"
-                  : drillSet.cardType === "sentence_types"
-                    ? "bg-teal-500/20 text-teal-300"
-                    : drillSet.cardType === "sentence_combining"
-                      ? "bg-sky-500/20 text-sky-300"
-                    : drillSet.cardType === "true_false"
-                      ? "bg-emerald-500/20 text-emerald-300"
-                      : "bg-orange-500/20 text-orange-400"
+                mode ? mode.classes
+                  : drillSet.cardType === "capitalization" ? "bg-violet-500/20 text-violet-300"
+                  : drillSet.cardType === "sentence_types" ? "bg-teal-500/20 text-teal-300"
+                  : drillSet.cardType === "sentence_combining" ? "bg-sky-500/20 text-sky-300"
+                  : drillSet.cardType === "true_false" ? "bg-emerald-500/20 text-emerald-300"
+                  : drillSet.cardType === "passage" ? "bg-rose-500/20 text-rose-300"
+                  : "bg-orange-500/20 text-orange-400"
               }`}>
-                {drillSet.cardType === "capitalization" ? <PenLine size={28} /> : drillSet.cardType === "sentence_types" ? <Braces size={28} /> : drillSet.cardType === "sentence_combining" ? <Merge size={28} /> : drillSet.cardType === "true_false" ? <Scale size={28} /> : <Flame size={28} />}
+                {mode ? <mode.icon size={28} /> : drillSet.cardType === "capitalization" ? <PenLine size={28} /> : drillSet.cardType === "sentence_types" ? <Braces size={28} /> : drillSet.cardType === "sentence_combining" ? <Merge size={28} /> : drillSet.cardType === "true_false" ? <Scale size={28} /> : <Flame size={28} />}
               </div>
               <div>
                 <h2 className="text-2xl font-heading font-bold text-white">{drillSet.title}</h2>
                 <p className="text-sm text-white/50">
-                  {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
-                    ? `${drillSet.question_count} items • self-paced ${
-                        drillSet.cardType === "sentence_combining"
-                          ? "sentence combining"
-                          : drillSet.cardType === "sentence_types"
-                            ? "sentence classification"
-                            : drillSet.cardType === "true_false"
-                              ? "true or false"
-                              : "capitalization"
-                      } practice`
+                  {mode
+                    ? isSpelling
+                      ? `${drillSet.question_count} words • 6 stages • study + spell from transcription`
+                      : `${drillSet.question_count} words • ${mode.label.toLowerCase()}`
                     : `${drillSet.question_count} questions • ${drillSet.time_limit_minutes}m target`}
                 </p>
               </div>
@@ -320,7 +392,7 @@ export default function AdminDrillAnalyticsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
               <Users size={24} className="text-blue-400 mx-auto mb-2" />
-              <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Total Attempts</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">{mode ? "Total Runs" : "Total Attempts"}</p>
               <p className="text-3xl font-bold text-white">{analytics.summary.totalAttempts}</p>
             </div>
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
@@ -330,8 +402,8 @@ export default function AdminDrillAnalyticsPage() {
             </div>
             <div className="bg-policeGreen/5 rounded-2xl p-5 border border-policeGreen/20 text-center">
               <Trophy size={24} className="text-policeGreen mx-auto mb-2" />
-              <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Mastered</p>
-               <p className="text-3xl font-bold text-policeGold">{analytics.summary.masteredStudents}</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">{isSpelling ? "Vault Mastered" : "Mastered"}</p>
+              <p className="text-3xl font-bold text-policeGold">{analytics.summary.masteredStudents}</p>
             </div>
             <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
               <Target size={24} className="text-policeGold mx-auto mb-2" />
@@ -343,11 +415,29 @@ export default function AdminDrillAnalyticsPage() {
               <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Avg Score</p>
               <p className={`text-3xl font-bold ${getScoreColor(analytics.summary.avgScorePercent)}`}>{analytics.summary.avgScorePercent}%</p>
             </div>
-            {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false" ? (
+            {mode ? (
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
-                <Repeat size={24} className="text-violet-300 mx-auto mb-2" />
-                <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Avg Submissions</p>
-                <p className="text-3xl font-bold text-violet-300">{analytics.summary.avgSubmissions ?? "—"}</p>
+                {isSpelling ? (
+                  <>
+                    <Layers size={24} className="text-sky-300 mx-auto mb-2" />
+                    <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Stages Passed</p>
+                    <p className="text-3xl font-bold text-sky-300">
+                      {(vocabDetail?.stages.filter((s) => s.perfectRuns > 0).length || 0)}/6
+                    </p>
+                  </>
+                ) : drillSet.vocabMode === "flash" ? (
+                  <>
+                    <Repeat size={24} className="text-orange-400 mx-auto mb-2" />
+                    <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Restarts</p>
+                    <p className="text-3xl font-bold text-orange-400">{analytics.summary.restartsTotal ?? 0}</p>
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={24} className="text-policeRed mx-auto mb-2" />
+                    <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Wrong Picks</p>
+                    <p className="text-3xl font-bold text-policeRed">{analytics.summary.wrongPicksTotal ?? 0}</p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
@@ -365,7 +455,7 @@ export default function AdminDrillAnalyticsPage() {
                 <AlertTriangle size={22} className="text-policeRed" />
                 <div>
                   <p className="text-sm font-bold text-policeRed">
-                    {analytics.summary.quitAttempts} quit attempt{analytics.summary.quitAttempts !== 1 ? "s" : ""}
+                    {analytics.summary.quitAttempts} unfinished {mode ? "run" : "attempt"}{analytics.summary.quitAttempts !== 1 ? "s" : ""}
                   </p>
                   <p className="text-xs text-white/50">Students who stopped before finishing</p>
                 </div>
@@ -375,6 +465,115 @@ export default function AdminDrillAnalyticsPage() {
                   {formatTime(analytics.summary.avgQuitTimeSeconds)}
                 </p>
                 <p className="text-[9px] uppercase tracking-widest text-white/40">Avg time before quitting</p>
+              </div>
+            </div>
+          )}
+
+          {/* Spelling stage breakdown */}
+          {isSpelling && (vocabDetail?.stages.length || 0) > 0 && (
+            <div className="card">
+              <div className="flex items-center gap-3 mb-2">
+                <Layers size={20} className="text-sky-400" />
+                <h2 className="text-xl font-heading font-bold text-white">Stage Breakdown</h2>
+              </div>
+              <p className="text-xs text-white/40 mb-5">
+                Stages only count as passed on a faultless run — a stage with a misspelling must be redone before the next one unlocks.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {vocabDetail!.stages.map((st) => (
+                  <div key={st.stage} className="bg-white/5 rounded-xl border border-white/10 p-4">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-300 flex items-center justify-center text-xs font-bold shrink-0">
+                          {st.stage}
+                        </span>
+                        <p className="text-sm font-bold text-white truncate">{st.name}</p>
+                      </div>
+                      {st.perfectRuns > 0 ? (
+                        <span className="text-[10px] text-policeGreen bg-policeGreen/10 px-2 py-0.5 rounded-full shrink-0">
+                          {st.studentsCompleted}/{st.students} passed
+                        </span>
+                      ) : st.attempts > 0 ? (
+                        <span className="text-[10px] text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full shrink-0">
+                          not yet passed
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="grid grid-cols-5 gap-2 text-center">
+                      <div>
+                        <p className="text-sm font-bold text-white">{st.attempts}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-white/40">Runs</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-policeGreen">{st.perfectRuns}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-white/40">Perfect</p>
+                      </div>
+                      <div>
+                        <p className={`text-sm font-bold ${getScoreColor(st.avgScorePercent)}`}>{st.avgScorePercent}%</p>
+                        <p className="text-[9px] uppercase tracking-widest text-white/40">Avg Score</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white/70">{formatTime(st.avgTimeSeconds)}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-white/40">Avg Time</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-policeRed">{st.wrongPicks}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-white/40">Misspelt</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Most-missed words */}
+          {mode && (vocabDetail?.mostMissed.length || 0) > 0 && (
+            <div className="card">
+              <div className="flex items-center gap-3 mb-2">
+                <XCircle size={20} className="text-policeRed" />
+                <h2 className="text-xl font-heading font-bold text-white">
+                  {isSpelling ? "Most-Misspelt Words" : "Most-Missed Words"}
+                </h2>
+              </div>
+              <p className="text-xs text-white/40 mb-5">
+                {isSpelling
+                  ? "Words students misspelt most often — the samples show what was actually typed."
+                  : "Words students got wrong most often — the samples show what was picked or typed."}
+              </p>
+              <div className="space-y-3">
+                {vocabDetail!.mostMissed.map((m, i) => {
+                  const maxMissed = vocabDetail!.mostMissed[0].timesMissed || 1;
+                  const barWidth = Math.max(8, Math.round((m.timesMissed / maxMissed) * 100));
+                  return (
+                    <div key={m.questionId} className="bg-white/5 rounded-xl border border-white/10 p-4">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] font-bold text-white/30 w-5 shrink-0">{i + 1}</span>
+                          <p className="font-bold text-white truncate">{m.label}</p>
+                          {m.transcription && (
+                            <span className="text-xs text-amber-200/70 font-mono truncate hidden sm:inline">{m.transcription}</span>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-policeRed bg-policeRed/10 px-2.5 py-1 rounded-full shrink-0">
+                          {m.timesMissed}× missed
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+                        <div className="h-full bg-gradient-to-r from-policeRed to-orange-400 rounded-full" style={{ width: `${barWidth}%` }} />
+                      </div>
+                      {m.examples.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {m.examples.map((ex, j) => (
+                            <span key={j} className="text-[10px] text-white/50 bg-white/5 border border-white/10 rounded-lg px-2 py-1 italic">
+                              “{ex}”
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -410,14 +609,20 @@ export default function AdminDrillAnalyticsPage() {
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-white truncate">{student.studentName}</p>
                             <p className="text-[10px] text-white/40">
-                              {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
-                                ? `${student.attempts} ${student.attempts === 1 ? "session" : "sessions"} • ${student.completed} perfected • ${student.submissions ?? 0} total submissions`
-                                 : `${student.attempts} ${student.attempts === 1 ? "try" : "tries"} in succession • ${student.completed} completed`}
+                              {mode
+                                ? isSpelling
+                                  ? `${student.attempts} stage run${student.attempts === 1 ? "" : "s"} • ${student.stagesCompletedCount ?? 0}/6 stages • ${student.wrongPicks ?? 0} misspelling${(student.wrongPicks ?? 0) === 1 ? "" : "s"}`
+                                  : drillSet.vocabMode === "flash"
+                                    ? `${student.attempts} run${student.attempts === 1 ? "" : "s"} • ${student.wrongPicks ?? 0} restart${(student.wrongPicks ?? 0) === 1 ? "" : "s"}`
+                                    : `${student.attempts} run${student.attempts === 1 ? "" : "s"} • ${student.wrongPicks ?? 0} wrong pick${(student.wrongPicks ?? 0) === 1 ? "" : "s"}`
+                                : drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
+                                  ? `${student.attempts} ${student.attempts === 1 ? "session" : "sessions"} • ${student.completed} perfected • ${student.submissions ?? 0} total submissions`
+                                  : `${student.attempts} ${student.attempts === 1 ? "try" : "tries"} in succession • ${student.completed} completed`}
                             </p>
                             <p className="mt-1 text-[10px] font-semibold text-policeGold md:hidden">
                               {student.mastered
-                                ? `Mastered • ${student.completed} completed ${student.completed === 1 ? "try" : "tries"}`
-                                : `${student.completed} completed ${student.completed === 1 ? "try" : "tries"}`}
+                                ? (isSpelling ? "Vault mastered" : "Mastered")
+                                : `${student.completed} completed ${student.completed === 1 ? "run" : "runs"}`}
                             </p>
                           </div>
                         </div>
@@ -431,7 +636,7 @@ export default function AdminDrillAnalyticsPage() {
                           <div className="hidden md:block">
                             {student.mastered ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-policeGold bg-policeGold/10 px-2 py-1 rounded-full border border-policeGold/20">
-                                <BadgeCheck size={11} /> {drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false" ? `Perfected · session ${student.masteredAtTry}` : `Mastered · try ${student.masteredAtTry}`}
+                                <BadgeCheck size={11} /> {isSpelling ? "Vault Complete" : `Mastered${student.masteredAtTry ? ` · run ${student.masteredAtTry}` : ""}`}
                               </span>
                             ) : (
                               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full border ${
@@ -441,8 +646,8 @@ export default function AdminDrillAnalyticsPage() {
                               }`}>
                                 <Repeat size={11} />
                                 {stoppedMidTry
-                                  ? `Stopped mid-try after ${student.attempts} ${student.attempts === 1 ? "try" : "tries"}`
-                                  : `Stopped after ${student.attempts} ${student.attempts === 1 ? "try" : "tries"}`}
+                                  ? `Stopped mid-run after ${student.attempts} ${student.attempts === 1 ? "run" : "runs"}`
+                                  : `Stopped after ${student.attempts} ${student.attempts === 1 ? "run" : "runs"}`}
                               </span>
                             )}
                           </div>
@@ -454,35 +659,40 @@ export default function AdminDrillAnalyticsPage() {
                         <div className="px-4 pb-4 pt-1 border-t border-white/10">
                           <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2 mt-3">
                             {student.mastered
-                              ? (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
-                                  ? `Retried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before perfecting the lesson on session ${student.masteredAtTry}`
+                              ? (mode
+                                  ? `${student.retriesBeforeStop} run${student.retriesBeforeStop === 1 ? "" : "s"} before ${isSpelling ? "completing the vault" : "mastering"}`
                                   : `Retried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before mastering on try ${student.masteredAtTry}`)
-                              : (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
-                                  ? `Submitted ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never got every item correct`
+                              : (mode
+                                  ? `${student.retriesBeforeStop} unfinished run${student.retriesBeforeStop === 1 ? "" : "s"} — never finished${isSpelling ? " the vault" : ""}`
                                   : `Tried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never answered all questions correctly`)}
                           </p>
                           <div className="space-y-1.5">
                             {student.attemptHistory.map((t) => (
                               <div key={t.tryNumber}
-                                className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs ${
+                                className={`flex items-center justify-between flex-wrap gap-2 rounded-lg px-3 py-2 text-xs ${
                                   t.mastered
                                     ? "bg-policeGreen/10 border border-policeGreen/25"
                                     : t.quit
                                       ? "bg-orange-500/5 border border-orange-500/15"
                                       : "bg-white/5 border border-white/10"
                                 }`}>
-                                <span className="flex items-center gap-2 text-white/60 font-mono">
-                                  <Repeat size={11} className="text-white/30" />
-                                  Try {t.tryNumber}
+                                <span className="flex items-center gap-2 text-white/60 font-mono min-w-0">
+                                  <Repeat size={11} className="text-white/30 shrink-0" />
+                                  Run {t.tryNumber}
                                 </span>
+                                {t.stageLabel && (
+                                  <span className="text-[10px] font-semibold text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded-full truncate max-w-[220px]">
+                                    Stage {t.stage} • {t.stageLabel}
+                                  </span>
+                                )}
                                 <span className={`font-bold font-mono ${getScoreColor(t.scorePercent)}`}>
                                   {t.scorePercent}% <span className="text-white/40 font-normal">({t.correctAnswers}/{t.totalQuestions})</span>
                                 </span>
-                                <span className="text-white/40 hidden sm:block">
-                                  {t.completed
-                                    ? (drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false" ? (t.mastered ? "🏆 PERFECTED" : "Completed") : (t.mastered ? "🏆 MASTERED" : "Completed"))
-                                    : "Quit mid-try"}
-                                </span>
+                                {t.wrongPicks !== undefined && t.wrongPicks > 0 && (
+                                  <span className="text-[10px] font-semibold text-policeRed bg-policeRed/10 px-2 py-0.5 rounded-full">
+                                    {t.wrongPicks} wrong
+                                  </span>
+                                )}
                                 {t.submissions !== undefined && (
                                   <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/10 px-2 py-0.5 rounded-full">
                                     {t.submissions} {t.submissions === 1 ? "submission" : "submissions"}
@@ -501,24 +711,25 @@ export default function AdminDrillAnalyticsPage() {
             )}
           </div>
 
-          {/* Recent Attempts */}
+          {/* Recent Runs / Attempts */}
           <div className="card">
             <div className="flex items-center gap-3 mb-6">
               <TrendingUp size={20} className="text-policeGold" />
-              <h2 className="text-xl font-heading font-bold text-white">Recent Attempts</h2>
+              <h2 className="text-xl font-heading font-bold text-white">{mode ? "Recent Runs" : "Recent Attempts"}</h2>
             </div>
 
             {analytics.attempts.length === 0 ? (
-              <p className="text-white/50 text-center py-8">No attempts yet.</p>
+              <p className="text-white/50 text-center py-8">No runs recorded yet.</p>
             ) : (
               <div className="space-y-2">
                 {analytics.attempts.slice(0, 20).map((attempt) => {
                   const correctCount = attempt.correct_answers ?? attempt.lines_correct ?? 0;
-                  const pct = Math.round((correctCount / Math.max(attempt.total_questions, 1)) * 100);
+                  const pct = attempt.scorePercent ?? Math.round((correctCount / Math.max(attempt.total_questions, 1)) * 100);
                   const duration = attempt.durationSeconds || attempt.time_spent_seconds || 0;
                   const mastered = !!attempt.mastered;
                   const isCap = drillSet.cardType === "capitalization";
                   const isCombineCard = drillSet.cardType === "sentence_combining";
+                  const attemptWrongPicks = attempt.wrongPicks;
                   return (
                     <div key={attempt.id} className="bg-white/5 rounded-xl px-4 py-3 border border-white/10 hover:border-white/20 transition">
                       <div className="flex items-center justify-between">
@@ -535,14 +746,22 @@ export default function AdminDrillAnalyticsPage() {
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-white truncate">{attempt.student_name}</p>
                             <p className="text-[10px] text-white/40">
-                              {correctCount}/{attempt.total_questions} {isCap ? "sentences correct" : isCombineCard ? "chunks perfect" : "answered"}
-                              {mastered ? (isCap || isCombineCard ? " • 🏆 Perfected" : " • 🏆 Mastered") : attempt.completed ? " • Completed" : " • Stopped early"}
+                              {attempt.stageLabel && (
+                                <span className="text-sky-300">{attempt.stageLabel} • </span>
+                              )}
+                              {correctCount}/{attempt.total_questions} {mode ? (isSpelling ? "words spelt" : "words correct") : isCap ? "sentences correct" : isCombineCard ? "chunks perfect" : "answered"}
+                              {mastered ? (mode && !isSpelling ? " • 🏆 Mastered" : " • Completed") : attempt.completed ? " • Completed" : " • Stopped early"}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           {attempt.completed && (
                             <p className={`text-sm font-bold font-mono ${getScoreColor(pct)}`}>{pct}%</p>
+                          )}
+                          {attemptWrongPicks > 0 && (
+                            <span className="text-[10px] font-semibold text-policeRed bg-policeRed/10 px-2 py-1 rounded-full">
+                              {attemptWrongPicks} wrong
+                            </span>
                           )}
                           {attempt.submissions !== undefined && (
                             <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/10 px-2 py-1 rounded-full">
