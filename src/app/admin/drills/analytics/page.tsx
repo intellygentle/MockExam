@@ -99,6 +99,8 @@ type DrillAnalytics = {
     wrongPicksTotal?: number;
     avgWrongPicks?: number;
     restartsTotal?: number;
+    totalStudents?: number;
+    completionRate?: number;
   };
   students: {
     studentName: string;
@@ -137,6 +139,16 @@ function vocabModeMeta(mode?: string | null): ModeMeta | null {
       return null;
   }
 }
+
+// Self-paced lesson cards resolved by the server-side lesson store.
+// Note: drill sets promoted to timed quizzes store card_type "quiz"
+// (e.g. the concord True/False sets), so they are NOT lesson cards —
+// only card types the lesson store still routes count.
+const isLessonCardSet = (t: string | null | undefined) =>
+  t === "capitalization" ||
+  t === "sentence_types" ||
+  t === "sentence_combining" ||
+  t === "true_false";
 
 export default function AdminDrillAnalyticsPage() {
   const [sets, setSets] = useState<DrillSetSummary[]>([]);
@@ -382,7 +394,19 @@ export default function AdminDrillAnalyticsPage() {
                     ? isSpelling
                       ? `${drillSet.question_count} words • 6 stages • study + spell from transcription`
                       : `${drillSet.question_count} words • ${mode.label.toLowerCase()}`
-                    : `${drillSet.question_count} questions • ${drillSet.time_limit_minutes}m target`}
+                    : isLessonCardSet(drillSet.cardType)
+                      ? (() => {
+                          const label =
+                            drillSet.cardType === "sentence_combining"
+                              ? "sentence combining"
+                              : drillSet.cardType === "sentence_types"
+                                ? "sentence classification"
+                                : drillSet.cardType === "capitalization"
+                                  ? "capitalization"
+                                  : "true or false";
+                          return `${drillSet.question_count} items • self-paced ${label} practice`;
+                        })()
+                      : `${drillSet.question_count} questions • ${drillSet.time_limit_minutes}m target`}
                 </p>
               </div>
             </div>
@@ -438,6 +462,12 @@ export default function AdminDrillAnalyticsPage() {
                     <p className="text-3xl font-bold text-policeRed">{analytics.summary.wrongPicksTotal ?? 0}</p>
                   </>
                 )}
+              </div>
+            ) : isLessonCardSet(drillSet.cardType) ? (
+              <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
+                <Repeat size={24} className="text-violet-300 mx-auto mb-2" />
+                <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Avg Submissions</p>
+                <p className="text-3xl font-bold text-violet-300">{analytics.summary.avgSubmissions ?? "—"}</p>
               </div>
             ) : (
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center">
@@ -615,7 +645,7 @@ export default function AdminDrillAnalyticsPage() {
                                   : drillSet.vocabMode === "flash"
                                     ? `${student.attempts} run${student.attempts === 1 ? "" : "s"} • ${student.wrongPicks ?? 0} restart${(student.wrongPicks ?? 0) === 1 ? "" : "s"}`
                                     : `${student.attempts} run${student.attempts === 1 ? "" : "s"} • ${student.wrongPicks ?? 0} wrong pick${(student.wrongPicks ?? 0) === 1 ? "" : "s"}`
-                                : drillSet.cardType === "capitalization" || drillSet.cardType === "sentence_types" || drillSet.cardType === "sentence_combining" || drillSet.cardType === "true_false"
+                                : isLessonCardSet(drillSet.cardType)
                                   ? `${student.attempts} ${student.attempts === 1 ? "session" : "sessions"} • ${student.completed} perfected • ${student.submissions ?? 0} total submissions`
                                   : `${student.attempts} ${student.attempts === 1 ? "try" : "tries"} in succession • ${student.completed} completed`}
                             </p>
@@ -636,7 +666,11 @@ export default function AdminDrillAnalyticsPage() {
                           <div className="hidden md:block">
                             {student.mastered ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-policeGold bg-policeGold/10 px-2 py-1 rounded-full border border-policeGold/20">
-                                <BadgeCheck size={11} /> {isSpelling ? "Vault Complete" : `Mastered${student.masteredAtTry ? ` · run ${student.masteredAtTry}` : ""}`}
+                                <BadgeCheck size={11} /> {isSpelling
+                                  ? "Vault Complete"
+                                  : isLessonCardSet(drillSet.cardType)
+                                    ? `Perfected${student.masteredAtTry ? ` · session ${student.masteredAtTry}` : ""}`
+                                    : `Mastered${student.masteredAtTry ? ` · run ${student.masteredAtTry}` : ""}`}
                               </span>
                             ) : (
                               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full border ${
@@ -661,10 +695,14 @@ export default function AdminDrillAnalyticsPage() {
                             {student.mastered
                               ? (mode
                                   ? `${student.retriesBeforeStop} run${student.retriesBeforeStop === 1 ? "" : "s"} before ${isSpelling ? "completing the vault" : "mastering"}`
-                                  : `Retried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before mastering on try ${student.masteredAtTry}`)
+                                  : isLessonCardSet(drillSet.cardType)
+                                    ? `Retried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before perfecting the lesson on session ${student.masteredAtTry}`
+                                    : `Retried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before mastering on try ${student.masteredAtTry}`)
                               : (mode
                                   ? `${student.retriesBeforeStop} unfinished run${student.retriesBeforeStop === 1 ? "" : "s"} — never finished${isSpelling ? " the vault" : ""}`
-                                  : `Tried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never answered all questions correctly`)}
+                                  : isLessonCardSet(drillSet.cardType)
+                                    ? `Submitted ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never got every item correct`
+                                    : `Tried ${student.retriesBeforeStop} ${student.retriesBeforeStop === 1 ? "time" : "times"} before stopping — never answered all questions correctly`)}
                           </p>
                           <div className="space-y-1.5">
                             {student.attemptHistory.map((t) => (
@@ -693,6 +731,11 @@ export default function AdminDrillAnalyticsPage() {
                                     {t.wrongPicks} wrong
                                   </span>
                                 )}
+                                <span className="text-white/40 hidden sm:block">
+                                  {t.completed
+                                    ? (t.mastered ? (isLessonCardSet(drillSet.cardType) ? "🏆 PERFECTED" : "🏆 MASTERED") : "Completed")
+                                    : "Quit mid-try"}
+                                </span>
                                 {t.submissions !== undefined && (
                                   <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/10 px-2 py-0.5 rounded-full">
                                     {t.submissions} {t.submissions === 1 ? "submission" : "submissions"}
@@ -730,6 +773,7 @@ export default function AdminDrillAnalyticsPage() {
                   const isCap = drillSet.cardType === "capitalization";
                   const isCombineCard = drillSet.cardType === "sentence_combining";
                   const attemptWrongPicks = attempt.wrongPicks;
+                  const isLesson = isLessonCardSet(drillSet.cardType);
                   return (
                     <div key={attempt.id} className="bg-white/5 rounded-xl px-4 py-3 border border-white/10 hover:border-white/20 transition">
                       <div className="flex items-center justify-between">
@@ -749,8 +793,16 @@ export default function AdminDrillAnalyticsPage() {
                               {attempt.stageLabel && (
                                 <span className="text-sky-300">{attempt.stageLabel} • </span>
                               )}
-                              {correctCount}/{attempt.total_questions} {mode ? (isSpelling ? "words spelt" : "words correct") : isCap ? "sentences correct" : isCombineCard ? "chunks perfect" : "answered"}
-                              {mastered ? (mode && !isSpelling ? " • 🏆 Mastered" : " • Completed") : attempt.completed ? " • Completed" : " • Stopped early"}
+                              {correctCount}/{attempt.total_questions} {mode
+                                ? (isSpelling ? "words spelt" : "words correct")
+                                : isLesson
+                                  ? (isCap ? "sentences correct" : isCombineCard ? "chunks perfect" : "statements judged")
+                                  : "answered"}
+                              {mastered
+                                ? (mode
+                                    ? (isSpelling ? " • Completed" : " • 🏆 Mastered")
+                                    : isLesson ? " • 🏆 Perfected" : " • 🏆 Mastered")
+                                : attempt.completed ? " • Completed" : " • Stopped early"}
                             </p>
                           </div>
                         </div>
@@ -781,9 +833,7 @@ export default function AdminDrillAnalyticsPage() {
                           <Clock size={11} className="text-policeGold" />
                           {formatDate(attempt.startTime)} {formatClock(attempt.startTime)}
                           <span className="text-white/30">→</span>
-                          {formatDate(attempt.startTime) !== formatDate(attempt.endTime)
-                            ? `${formatDate(attempt.endTime)} `
-                            : ""}
+                          {formatDate(attempt.startTime) !== formatDate(attempt.endTime) ? formatDate(attempt.endTime) + " " : ""}
                           {formatClock(attempt.endTime)}
                         </span>
                         <span className={`px-2 py-0.5 rounded-full font-semibold ${
