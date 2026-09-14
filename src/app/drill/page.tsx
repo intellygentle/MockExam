@@ -18,6 +18,8 @@ import CombineCard from "@/components/CombineCard";
 import ParaGapfillCard from "@/components/ParaGapfillCard";
 import SentenceExpansionCard from "@/components/SentenceExpansionCard";
 import SpellingCard from "@/components/SpellingCard";
+import RulesStudyScreen from "@/components/RulesStudyScreen";
+import LessonBlocks, { type LessonBlock } from "@/components/LessonBlocks";
 import type { OptionKey, OptionsRecord } from "@/lib/questions";
 import confetti from "canvas-confetti";
 
@@ -69,7 +71,25 @@ type DrillQuestion = {
   category: string;
 };
 
-type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "spelling" | "para_gapfill" | "sentence_expansion" | "results";
+type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "spelling" | "para_gapfill" | "sentence_expansion" | "rules_study" | "results";
+
+type RulesNote = { title: string; description?: string; blocks: LessonBlock[] };
+
+/** Parse the rules note attached to a timed quiz card (lesson_content JSON). */
+const getRulesNote = (set: any): RulesNote | null => {
+  if (!set?.lesson_content) return null;
+  try {
+    const parsed = JSON.parse(set.lesson_content);
+    if (parsed?.rulesNote && Array.isArray(parsed.rulesNote.blocks) && parsed.rulesNote.blocks.length > 0) {
+      return {
+        title: parsed.rulesNote.title || set.title || "Rules Note",
+        description: parsed.rulesNote.description || "",
+        blocks: parsed.rulesNote.blocks,
+      };
+    }
+  } catch { /* not a rules-note card */ }
+  return null;
+};
 
 type StackDrillSet = {
   id: number;
@@ -121,6 +141,7 @@ export default function DrillPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [warningsCount, setWarningsCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const warningTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [questionTimers, setQuestionTimers] = useState<Map<number, number>>(new Map());
@@ -305,6 +326,7 @@ export default function DrillPage() {
       setElapsedSeconds(0);
       setWarningsCount(0);
       setShowWarning(false);
+      setShowRules(false);
       setQuestionTimers(new Map());
 
       // Reset session retry tracking when switching to a different card
@@ -340,6 +362,18 @@ export default function DrillPage() {
     } finally {
       setStartingDrill(false);
     }
+  };
+
+  // Entry point from the drills list: quiz cards that carry a rules note
+  // (lesson_content → rulesNote) open the study screen first, so the rules
+  // are read before the timed questions start. Regular quizzes start directly.
+  const handleStartCard = async (set: DrillSet) => {
+    if (getRulesNote(set)) {
+      setSelectedSet(set);
+      setPhase("rules_study");
+      return;
+    }
+    await handleStartDrill(set);
   };
 
   // Check for time warnings
@@ -685,6 +719,7 @@ export default function DrillPage() {
                                 isParaGapfillCard={isParaGapfillCard}
                                 isSentenceExpansionCard={isSentenceExpansionCard}
                                 isSentenceExpansionMcqCard={isSentenceExpansionMcqCard}
+                                hasRulesNote={!!getRulesNote(set)}
                                 lessonBadge={lessonBadge}
                                 onStartLesson={() => {
                                   const fullSet: DrillSet = {
@@ -734,8 +769,7 @@ export default function DrillPage() {
                                     bestAttempt: null,
                                     created_at: "",
                                   };
-                                  setSelectedSet(fullSet);
-                                  await handleStartDrill(fullSet);
+                                  await handleStartCard(fullSet);
                                 }}
                                 onStartPassage={async () => {
                                   const fullSet: DrillSet = {
@@ -942,10 +976,10 @@ export default function DrillPage() {
                           </button>
                         )
                       ) : (
-                        <button onClick={(e) => { e.stopPropagation(); handleStartDrill(set); }}
+                        <button onClick={(e) => { e.stopPropagation(); handleStartCard(set); }}
                           disabled={startingDrill}
                           className="w-full flex items-center justify-center gap-2 bg-policeGold text-policeBlue font-bold py-2.5 sm:py-3 rounded-xl hover:brightness-110 transition text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed">
-                          {startingDrill ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />} {startingDrill ? "Starting..." : "Start Drill"}
+                          {startingDrill ? <Loader2 size={16} className="animate-spin" /> : getRulesNote(set) ? <BookOpen size={16} /> : <Zap size={16} />} {startingDrill ? "Starting..." : getRulesNote(set) ? "Study Rules First" : "Start Drill"}
                         </button>
                       )}
                     </motion.div>
@@ -957,6 +991,31 @@ export default function DrillPage() {
         ) : null}
       </div>
     );
+  }
+
+  // ── RULES STUDY PHASE (quiz card with an attached rules note) ──
+  if (phase === "rules_study" && selectedSet) {
+    const rulesNote = getRulesNote(selectedSet);
+    if (rulesNote) {
+      return (
+        <RulesStudyScreen
+          key={selectedSet.id}
+          title={rulesNote.title}
+          description={rulesNote.description}
+          blocks={rulesNote.blocks}
+          questionCount={selectedSet.question_count}
+          timeLimitMinutes={selectedSet.time_limit_minutes}
+          starting={startingDrill}
+          onStart={() => handleStartDrill()}
+          onBack={() => {
+            setPhase("select");
+            setSelectedSet(null);
+            loadDrillSets();
+            loadStacks();
+          }}
+        />
+      );
+    }
   }
 
   // ── PLAYING PHASE ──
@@ -1004,6 +1063,17 @@ export default function DrillPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
+              {getRulesNote(selectedSet) && (
+                <button
+                  onClick={() => setShowRules((v) => !v)}
+                  className={`flex items-center gap-1 rounded-full px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest transition ${
+                    showRules ? "bg-amber-500/20 text-amber-300" : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white"
+                  }`}
+                  title="Open the rules note"
+                >
+                  <BookOpen size={12} /> Laws
+                </button>
+              )}
               <span className="text-[10px] sm:text-xs text-policeGreen font-semibold bg-policeGreen/10 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">{correctCount} correct</span>
               <span className="hidden md:inline-flex text-xs uppercase tracking-widest bg-white/10 px-2 py-1 rounded-full text-white/50 truncate max-w-[220px]">
                 {selectedSet?.title}
@@ -1019,6 +1089,27 @@ export default function DrillPage() {
             />
           </div>
         </div>
+
+        {/* Rules note reference (quiz cards that carry one) */}
+        {getRulesNote(selectedSet) && showRules && (
+          <div className="max-w-3xl mx-auto card space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-amber-500/15 text-amber-300 shrink-0">
+                  <BookOpen size={18} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-heading font-bold text-white truncate">{getRulesNote(selectedSet)!.title}</h3>
+                  <p className="text-[10px] uppercase tracking-widest text-white/40">Rules Reference — the clock keeps running</p>
+                </div>
+              </div>
+              <button onClick={() => setShowRules(false)} className="p-2 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition shrink-0">
+                <ChevronDown size={16} />
+              </button>
+            </div>
+            <LessonBlocks blocks={getRulesNote(selectedSet)!.blocks} />
+          </div>
+        )}
 
         {/* Over-time Warning */}
         <AnimatePresence>
@@ -1444,6 +1535,7 @@ function LessonSetCard({
   isParaGapfillCard,
   isSentenceExpansionCard,
   isSentenceExpansionMcqCard,
+  hasRulesNote,
   lessonBadge,
   onStartLesson,
   onStartCombine,
@@ -1463,6 +1555,7 @@ function LessonSetCard({
   isParaGapfillCard: (s: any) => boolean;
   isSentenceExpansionCard: (s: any) => boolean;
   isSentenceExpansionMcqCard: (s: any) => boolean;
+  hasRulesNote: boolean;
   lessonBadge: (s: any) => { label: string; classes: string } | null;
   onStartLesson: () => void;
   onStartCombine: () => void;
@@ -1534,12 +1627,12 @@ function LessonSetCard({
           {set.mastered ? (
             <>
               <RotateCcw size={13} />
-              {set.capitalization_slug === "spelling" ? "Spell Again" : isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write Again" : isParaGapfillCard({ card_type: set.card_type }) ? "Practice Again" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Practice Again" : isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Practice Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : "Retake"}
+              {set.capitalization_slug === "spelling" ? "Spell Again" : isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write Again" : isParaGapfillCard({ card_type: set.card_type }) ? "Practice Again" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Practice Again" : isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Practice Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : hasRulesNote ? "Study Again" : "Retake"}
             </>
           ) : (
             <>
-              {set.capitalization_slug === "spelling" ? <Volume2 size={13} /> : isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : <Zap size={13} />}
-              {set.capitalization_slug === "spelling" ? "Spell" : isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write" : isParaGapfillCard({ card_type: set.card_type }) ? "Fill Blanks" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Correct" : isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Choose" : isLessonCard({ card_type: set.card_type }) ? "Start" : "Drill"}
+              {set.capitalization_slug === "spelling" ? <Volume2 size={13} /> : isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : hasRulesNote ? <BookOpen size={13} /> : <Zap size={13} />}
+              {set.capitalization_slug === "spelling" ? "Spell" : isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write" : isParaGapfillCard({ card_type: set.card_type }) ? "Fill Blanks" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Correct" : isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Choose" : isLessonCard({ card_type: set.card_type }) ? "Start" : hasRulesNote ? "Study" : "Drill"}
             </>
           )}
         </button>
