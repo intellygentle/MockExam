@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     }
 
     const cardType = set.card_type || "quiz";
-    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table") {
+    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table" && cardType !== "definition_recall") {
       return NextResponse.json({ error: "This drill set is not a lesson card" }, { status: 400 });
     }
 
@@ -73,6 +73,10 @@ export async function GET(req: Request) {
         mcqOptions: q.mcqOptions || null,
         sentenceExpansion: q.sentenceExpansion || null,
         relationshipOptions: q.relationshipOptions || null,
+        // Recall cards show the meaning during the study phase, so it is sent
+        // to the client; grading happens client-side after the timer hides it.
+        definition: card.kind === "definition_recall" ? q.answer : undefined,
+        stage: card.kind === "definition_recall" ? q.stage ?? 1 : undefined,
       })),
       lineCount: card.questions.length,
       attempt: attempt

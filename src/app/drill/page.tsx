@@ -17,6 +17,7 @@ import VocabularyCard from "@/components/VocabularyCard";
 import CombineCard from "@/components/CombineCard";
 import ParaGapfillCard from "@/components/ParaGapfillCard";
 import SentenceExpansionCard from "@/components/SentenceExpansionCard";
+import DefinitionRecallCard from "@/components/DefinitionRecallCard";
 import SpellingCard from "@/components/SpellingCard";
 import RulesStudyScreen from "@/components/RulesStudyScreen";
 import LessonBlocks, { type LessonBlock } from "@/components/LessonBlocks";
@@ -71,7 +72,7 @@ type DrillQuestion = {
   category: string;
 };
 
-type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "spelling" | "para_gapfill" | "sentence_expansion" | "rules_study" | "results";
+type Phase = "select" | "playing" | "lesson" | "combine" | "passage" | "vocabulary" | "spelling" | "para_gapfill" | "sentence_expansion" | "definition_recall" | "rules_study" | "results";
 
 type RulesNote = { title: string; description?: string; blocks: LessonBlock[] };
 
@@ -302,6 +303,15 @@ export default function DrillPage() {
     setPhase("sentence_expansion");
   };
 
+  const handleStartDefinitionRecall = (set: DrillSet) => {
+    const name = studentName.trim() || localStorage.getItem("scholars-arena-name") || "Anonymous";
+    localStorage.setItem("scholars-arena-name", name);
+    setStudentName(name);
+    if (schoolName.trim()) localStorage.setItem("scholars-arena-school", schoolName.trim());
+    setSelectedSet(set);
+    setPhase("definition_recall");
+  };
+
   const handleStartDrill = async (setOverride?: DrillSet | null) => {
     const set = setOverride ?? selectedSet;
     if (!set || startingDrill) return;
@@ -374,6 +384,31 @@ export default function DrillPage() {
       return;
     }
     await handleStartDrill(set);
+  };
+
+  // Read-only study card: record that the notes were studied, then return.
+  const handleFinishStudy = async () => {
+    if (!selectedSet || startingDrill) return;
+    setStartingDrill(true);
+    try {
+      const name = studentName.trim() || localStorage.getItem("scholars-arena-name") || "Anonymous";
+      localStorage.setItem("scholars-arena-name", name);
+      setStudentName(name);
+      await fetch("/api/lesson-card/study", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: name,
+          schoolName: schoolName.trim() || localStorage.getItem("scholars-arena-school") || "",
+          drillSetId: selectedSet.id,
+        }),
+      });
+    } catch {}
+    setStartingDrill(false);
+    setPhase("select");
+    setSelectedSet(null);
+    loadDrillSets();
+    loadStacks();
   };
 
   // Check for time warnings
@@ -503,6 +538,14 @@ export default function DrillPage() {
   const isSentenceExpansionMcqCard = (set: any) =>
     set.card_type === "sentence_expansion_mcq";
 
+  // Read-only notes card (lesson_content rulesNote, no questions to answer)
+  const isStudyCard = (set: any) =>
+    set.card_type === "study";
+
+  // Sequential term/definition recall card (study 10s → type the meaning)
+  const isDefinitionRecallCard = (set: any) =>
+    set.card_type === "definition_recall";
+
   const lessonBadge = (set: DrillSet) => {
     if (set.card_type === "capitalization") {
       return { label: "✍️ Capitalization", classes: "bg-violet-500/15 text-violet-300" };
@@ -533,6 +576,12 @@ export default function DrillPage() {
     }
     if (set.card_type === "true_false") {
       return { label: "⚖️ True or False", classes: "bg-emerald-500/15 text-emerald-300" };
+    }
+    if (set.card_type === "study") {
+      return { label: "📖 Study Notes", classes: "bg-blue-500/15 text-blue-300" };
+    }
+    if (set.card_type === "definition_recall") {
+      return { label: "🧠 Definition Recall", classes: "bg-violet-500/15 text-violet-300" };
     }
     if (set.card_type === "passage") {
       return { label: "📖 Reading Passage", classes: "bg-rose-500/15 text-rose-300" };
@@ -723,6 +772,7 @@ export default function DrillPage() {
                                 isParaGapfillCard={isParaGapfillCard}
                                 isSentenceExpansionCard={isSentenceExpansionCard}
                                 isSentenceExpansionMcqCard={isSentenceExpansionMcqCard}
+                                isDefinitionRecallCard={isDefinitionRecallCard}
                                 hasRulesNote={!!getRulesNote(set)}
                                 lessonBadge={lessonBadge}
                                 onStartLesson={() => {
@@ -764,6 +814,16 @@ export default function DrillPage() {
                                     created_at: "",
                                   };
                                   handleStartSentenceExpansion(fullSet);
+                                }}
+                                onStartDefinitionRecall={() => {
+                                  const fullSet: DrillSet = {
+                                    ...set,
+                                    question_count: set.question_count,
+                                    attemptHistory: [],
+                                    bestAttempt: null,
+                                    created_at: "",
+                                  };
+                                  handleStartDefinitionRecall(fullSet);
                                 }}
                                 onStartDrill={async () => {
                                   const fullSet: DrillSet = {
@@ -879,7 +939,7 @@ export default function DrillPage() {
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <BrainCircuit size={14} className="text-blue-400 mx-auto mb-0.5" />
                       <p className="text-sm font-bold text-white">{set.question_count}</p>
-                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isVocabCard(set) ? "Vocab Words" : isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : set.card_type === "word_table" ? "Forms" : "Sentences") : "Questions"}</p>
+                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isStudyCard(set) ? "Notes" : isVocabCard(set) ? "Vocab Words" : isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : set.card_type === "word_table" ? "Forms" : "Sentences") : "Questions"}</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <Clock size={14} className="text-policeGold mx-auto mb-0.5" />
@@ -1010,7 +1070,8 @@ export default function DrillPage() {
           questionCount={selectedSet.question_count}
           timeLimitMinutes={selectedSet.time_limit_minutes}
           starting={startingDrill}
-          onStart={() => handleStartDrill()}
+          studyOnly={isStudyCard(selectedSet)}
+          onStart={() => (isStudyCard(selectedSet) ? handleFinishStudy() : handleStartDrill())}
           onBack={() => {
             setPhase("select");
             setSelectedSet(null);
@@ -1307,6 +1368,23 @@ export default function DrillPage() {
     );
   }
 
+  // ── DEFINITION RECALL PHASE ──
+  if (phase === "definition_recall" && selectedSet) {
+    return (
+      <DefinitionRecallCard
+        key={selectedSet.id}
+        set={selectedSet}
+        studentName={studentName}
+        schoolName={schoolName}
+        onDone={() => {
+          setPhase("select");
+          setSelectedSet(null);
+          loadDrillSets();
+        }}
+      />
+    );
+  }
+
   // ── RESULTS PHASE ──
   if (phase === "results") {
     const total = questions.length;
@@ -1539,12 +1617,14 @@ function LessonSetCard({
   isParaGapfillCard,
   isSentenceExpansionCard,
   isSentenceExpansionMcqCard,
+  isDefinitionRecallCard,
   hasRulesNote,
   lessonBadge,
   onStartLesson,
   onStartCombine,
   onStartParaGapfill,
   onStartSentenceExpansion,
+  onStartDefinitionRecall,
   onStartDrill,
   onStartPassage,
   onStartVocab,
@@ -1559,12 +1639,14 @@ function LessonSetCard({
   isParaGapfillCard: (s: any) => boolean;
   isSentenceExpansionCard: (s: any) => boolean;
   isSentenceExpansionMcqCard: (s: any) => boolean;
+  isDefinitionRecallCard: (s: any) => boolean;
   hasRulesNote: boolean;
   lessonBadge: (s: any) => { label: string; classes: string } | null;
   onStartLesson: () => void;
   onStartCombine: () => void;
   onStartParaGapfill: () => void;
   onStartSentenceExpansion: () => void;
+  onStartDefinitionRecall: () => void;
   onStartDrill: () => void;
   onStartPassage: () => void;
   onStartVocab: () => void;
@@ -1598,7 +1680,7 @@ function LessonSetCard({
               </span>
             )}
             <span className="text-[10px] text-white/40">
-              {set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : set.card_type === "word_table" ? "forms" : "sentences") : "questions"}
+              {set.card_type === "study" ? "Unit notes" : set.card_type === "definition_recall" ? <>{set.question_count} words • 3 stages</> : <>{set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : set.card_type === "word_table" ? "forms" : "sentences") : "questions"}</>}
             </span>
           </div>
         </div>
@@ -1611,6 +1693,8 @@ function LessonSetCard({
               onStartPassage();
             } else if (isSentenceExpansionCard({ card_type: set.card_type })) {
               onStartSentenceExpansion();
+            } else if (isDefinitionRecallCard({ card_type: set.card_type })) {
+              onStartDefinitionRecall();
             } else if (isParaGapfillCard({ card_type: set.card_type })) {
               onStartParaGapfill();
             } else if (isCombineSeqCard({ card_type: set.card_type }) || isErrorCorrectionCard({ card_type: set.card_type }) || isSentenceExpansionMcqCard({ card_type: set.card_type })) {
@@ -1631,12 +1715,12 @@ function LessonSetCard({
           {set.mastered ? (
             <>
               <RotateCcw size={13} />
-              {set.capitalization_slug === "spelling" ? "Spell Again" : isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write Again" : isParaGapfillCard({ card_type: set.card_type }) ? "Practice Again" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Practice Again" : isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Practice Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : hasRulesNote ? "Study Again" : "Retake"}
+              {set.capitalization_slug === "spelling" ? "Spell Again" : isVocabCard({ card_type: set.card_type }) ? "Study Again" : isPassageCard({ card_type: set.card_type }) ? "Read Again" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write Again" : isParaGapfillCard({ card_type: set.card_type }) ? "Practice Again" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Practice Again" : isCombineSeqCard({ card_type: set.card_type }) ? "Practice Again" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Practice Again" : isDefinitionRecallCard({ card_type: set.card_type }) ? "Recall Again" : isLessonCard({ card_type: set.card_type }) ? "Practice" : hasRulesNote ? "Study Again" : "Retake"}
             </>
           ) : (
             <>
-              {set.capitalization_slug === "spelling" ? <Volume2 size={13} /> : isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : hasRulesNote ? <BookOpen size={13} /> : <Zap size={13} />}
-              {set.capitalization_slug === "spelling" ? "Spell" : isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write" : isParaGapfillCard({ card_type: set.card_type }) ? "Fill Blanks" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Correct" : isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Choose" : isLessonCard({ card_type: set.card_type }) ? "Start" : hasRulesNote ? "Study" : "Drill"}
+              {set.capitalization_slug === "spelling" ? <Volume2 size={13} /> : isVocabCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isPassageCard({ card_type: set.card_type }) ? <BookOpen size={13} /> : isDefinitionRecallCard({ card_type: set.card_type }) ? <BrainCircuit size={13} /> : isLessonCard({ card_type: set.card_type }) ? <PencilLine size={13} /> : hasRulesNote ? <BookOpen size={13} /> : <Zap size={13} />}
+              {set.capitalization_slug === "spelling" ? "Spell" : isVocabCard({ card_type: set.card_type }) ? "Study" : isPassageCard({ card_type: set.card_type }) ? "Read" : isSentenceExpansionCard({ card_type: set.card_type }) ? "Write" : isParaGapfillCard({ card_type: set.card_type }) ? "Fill Blanks" : isErrorCorrectionCard({ card_type: set.card_type }) ? "Correct" : isCombineSeqCard({ card_type: set.card_type }) ? "Combine" : isSentenceExpansionMcqCard({ card_type: set.card_type }) ? "Choose" : isDefinitionRecallCard({ card_type: set.card_type }) ? "Recall" : isLessonCard({ card_type: set.card_type }) ? "Start" : hasRulesNote ? "Study" : "Drill"}
             </>
           )}
         </button>

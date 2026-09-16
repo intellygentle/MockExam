@@ -7,6 +7,7 @@ import { paraGapfillCard, type ParaGapfillData } from "./para-gapfill-card";
 import { getMcqPart1, getMcqPart2 } from "./sentence-expansion-mcq-card";
 import { buildFreeWritePart1, buildFreeWritePart2, getRandomNudge } from "./sentence-expansion-card";
 import { editorialWordFamiliesCard, gradeWordForm } from "./word-table-cards";
+import { definitionRecallCard } from "./definition-recall-card";
 
 /**
  * ============================================================
@@ -104,9 +105,11 @@ export type LessonQuestion = {
     /** Accepted spellings/inflections (matched on word boundaries). */
     accepted: string[];
   };
+  /** Definition-recall cards: the stage (1-based) this item belongs to. */
+  stage?: number;
 };
 
-export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table" | "definition_recall";
 
 export type LessonCardDef = {
   slug: string;
@@ -545,7 +548,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table" || cardType === "definition_recall") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -553,6 +556,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
 
 /** All sentence-type style cards (classify kind). */
 const CARDS: Record<string, LessonCardDef> = {
+  [definitionRecallCard.slug]: definitionRecallCard,
   "sentence-types-basics": {
     slug: "sentence-types-basics",
     title: "Sentence Types",

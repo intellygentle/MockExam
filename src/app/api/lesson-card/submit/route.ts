@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         return { error: NextResponse.json({ error: "Drill set not found" }, { status: 404 }) };
       }
       const cardType = set.card_type || "quiz";
-      if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table") {
+      if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table" && cardType !== "definition_recall") {
         return { error: NextResponse.json({ error: "This drill set is not a lesson card" }, { status: 400 }) };
       }
       const card = getLessonCard(cardType, set.capitalization_slug);

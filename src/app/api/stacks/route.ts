@@ -67,7 +67,9 @@ export async function GET(req: Request) {
               cardType === "para_gapfill" ||
               cardType === "sentence_expansion" ||
               cardType === "sentence_expansion_mcq" ||
-              cardType === "word_table";
+              cardType === "word_table" ||
+              cardType === "study" ||
+              cardType === "definition_recall";
             const isPassageCard = cardType === "passage";
             const isVocabCard = cardType === "vocabulary";
 
