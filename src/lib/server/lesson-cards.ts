@@ -8,6 +8,7 @@ import { getMcqPart1, getMcqPart2 } from "./sentence-expansion-mcq-card";
 import { buildFreeWritePart1, buildFreeWritePart2, getRandomNudge } from "./sentence-expansion-card";
 import { editorialWordFamiliesCard, gradeWordForm } from "./word-table-cards";
 import { definitionRecallCard } from "./definition-recall-card";
+import { spellingQuizCard } from "./spelling-quiz-card";
 
 /**
  * ============================================================
@@ -107,9 +108,15 @@ export type LessonQuestion = {
   };
   /** Definition-recall cards: the stage (1-based) this item belongs to. */
   stage?: number;
+  /** Spelling-quiz cards: the two rival spellings shown as options A and B. */
+  spellingOptions?: { a: string; b: string };
+  /** Spelling-quiz cards: which of the two spellings is the real word. */
+  correctOption?: "a" | "b";
+  /** Spelling-quiz cards: disambiguating note, e.g. "(verb)". */
+  note?: string;
 };
 
-export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table" | "definition_recall";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table" | "definition_recall" | "spelling_quiz";
 
 export type LessonCardDef = {
   slug: string;
@@ -548,7 +555,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table" || cardType === "definition_recall") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table" || cardType === "definition_recall" || cardType === "spelling_quiz") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -557,6 +564,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
 /** All sentence-type style cards (classify kind). */
 const CARDS: Record<string, LessonCardDef> = {
   [definitionRecallCard.slug]: definitionRecallCard,
+  [spellingQuizCard.slug]: spellingQuizCard,
   "sentence-types-basics": {
     slug: "sentence-types-basics",
     title: "Sentence Types",

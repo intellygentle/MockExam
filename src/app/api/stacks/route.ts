@@ -69,7 +69,8 @@ export async function GET(req: Request) {
               cardType === "sentence_expansion_mcq" ||
               cardType === "word_table" ||
               cardType === "study" ||
-              cardType === "definition_recall";
+              cardType === "definition_recall" ||
+              cardType === "spelling_quiz";
             const isPassageCard = cardType === "passage";
             const isVocabCard = cardType === "vocabulary";
 
@@ -127,12 +128,35 @@ export async function GET(req: Request) {
               }
             }
 
+            // Spelling speed quiz: show how many of the 120 words are
+            // learned (correct three runs in a row), not just mastered.
+            let spellingProgress: any = null;
+            if (cardType === "spelling_quiz" && studentName.trim()) {
+              try {
+                const { loadSpellingProgress } = await import("@/lib/server/spelling-quiz-progress");
+                const progress = await loadSpellingProgress(
+                  supabase,
+                  studentName.trim(),
+                  set.id,
+                  questionCount
+                );
+                spellingProgress = {
+                  learnedWords: progress.learnedWords,
+                  totalWords: progress.totalWords,
+                  percent: progress.percent,
+                  mastered: progress.mastered,
+                  started: progress.started,
+                };
+              } catch {}
+            }
+
             return {
               ...set,
               question_count: questionCount,
               subjectName,
               mastered,
               totalAttempts,
+              spellingProgress,
             };
           })
         );

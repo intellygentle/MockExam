@@ -33,6 +33,9 @@ export async function POST(req: Request) {
       .eq("id", setId)
       .maybeSingle();
 
+    // NOTE: spelling_quiz cards are deliberately NOT self-paced — finishing a
+    // 5-minute run must not mark them studied. They master only when every
+    // word is learned (see /api/lesson-card/spelling-quiz).
     if (!set || (set.card_type !== "study" && set.card_type !== "definition_recall")) {
       return NextResponse.json({ error: "This drill set is not a self-paced card" }, { status: 400 });
     }

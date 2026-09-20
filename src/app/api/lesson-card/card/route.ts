@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getLessonCard } from "@/lib/server/lesson-cards";
+import {
+  SPELLING_QUIZ_RUN_SECONDS,
+  SPELLING_QUIZ_MASTERY_TARGET,
+} from "@/lib/server/spelling-quiz-card";
+import { loadSpellingProgress } from "@/lib/server/spelling-quiz-progress";
 
 /**
  * GET /api/lesson-card/card?drill_set_id=1&student_name=Jane
@@ -35,7 +40,7 @@ export async function GET(req: Request) {
     }
 
     const cardType = set.card_type || "quiz";
-    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table" && cardType !== "definition_recall") {
+    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table" && cardType !== "definition_recall" && cardType !== "spelling_quiz") {
       return NextResponse.json({ error: "This drill set is not a lesson card" }, { status: 400 });
     }
 
@@ -44,6 +49,17 @@ export async function GET(req: Request) {
       return NextResponse.json(
         { error: `No lesson is registered for slug "${set.capitalization_slug || "(empty)"}"` },
         { status: 404 }
+      );
+    }
+
+    // Per-word progress for the spelling speed quiz (streaks of 3 = learned)
+    let spellingProgress: any = null;
+    if (studentName && card.kind === "spelling_quiz") {
+      spellingProgress = await loadSpellingProgress(
+        supabase,
+        studentName,
+        drillSetId,
+        card.questions.length
       );
     }
 
@@ -77,8 +93,17 @@ export async function GET(req: Request) {
         // to the client; grading happens client-side after the timer hides it.
         definition: card.kind === "definition_recall" ? q.answer : undefined,
         stage: card.kind === "definition_recall" ? q.stage ?? 1 : undefined,
+        // Spelling-quiz cards are graded live at tap speed, so the two
+        // spellings and the correct one are sent to the client (see
+        // spelling-quiz-card.ts).
+        spellingOptions: card.kind === "spelling_quiz" ? q.spellingOptions ?? null : undefined,
+        correctOption: card.kind === "spelling_quiz" ? q.correctOption ?? "a" : undefined,
+        note: card.kind === "spelling_quiz" ? q.note ?? "" : undefined,
       })),
       lineCount: card.questions.length,
+      runSeconds: card.kind === "spelling_quiz" ? SPELLING_QUIZ_RUN_SECONDS : undefined,
+      masteryTarget: card.kind === "spelling_quiz" ? SPELLING_QUIZ_MASTERY_TARGET : undefined,
+      progress: spellingProgress,
       attempt: attempt
         ? {
             status: attempt.status,
