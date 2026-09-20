@@ -1,0 +1,58 @@
+=== MOCKEXAM SESSION HANDOVER — Words Table Card (Editorials) ===
+Date: 2026-09-14 (evening session)
+Branch: main, synced with origin/main through commit 15a22d2
+STATUS: Words Table card COMPLETE, LIVE IN DB, PUSHED. Nothing pending.
+
+⚠ CREDENTIAL RULES (still apply — see git history for the full original list)
+  ✗ Never cat/print old scripts/insert_*.py (they hardcode an old service key),
+    never print keys/tokens from .env / .env.local, never paste credentials.
+  ✓ .env.local: SUPABASE_URL + SUPABASE_ANON_KEY
+  ✓ .env: SUPABASE_ACCESS_TOKEN (Supabase personal access token from the
+    account that OWNS the MockExam project — ref ifrxmoftzfyhfyconvxa.
+    Note: the first token tried belonged to a different account and got 403.)
+  ✓ The Management API (api.supabase.com/v1/projects/<ref>/database/query)
+    CAN run DDL; PostgREST (anon/service keys) CANNOT.
+  ✓ .env* is gitignored (verified before commit 15a22d2).
+
+═════════════════════════════════════════════════════════════
+SHIPPED THIS SESSION (commit 15a22d2, pushed)
+═════════════════════════════════════════════════════════════
+"Words Table: Editorial Word Families" lesson card (drill set id=47):
+- card_type "word_table", slug "editorial-word-families", level ss3,
+  74 word-form items across 23 family sections, in Editorials stack (id=6,
+  sort_order 8). Live in DB and verified via API.
+- Files: src/lib/server/word-table-cards.ts (data + grading),
+  lesson-cards.ts routing, LessonCard.tsx rendering (orange theme, Table
+  icon, "Write & submit", "forms accepted/locked", "word forms used
+  correctly"), drill/page.tsx + analytics + 5 API routes updated.
+- DB constraint drill_sets_card_type_check widened to include word_table
+  (and error_correction/para_gapfill/sentence_expansion* which the old
+  constraint predated).
+
+SCRIPTS (all idempotent, keys loaded from .env/.env.local at runtime):
+- scripts/run_word_table_migration.py — ALTER + insert + link via Management
+  API. ALREADY RUN — do NOT re-run unless rebuilding from scratch.
+- scripts/insert_word_table_card.py — PostgREST-only insert (anon/service
+  key). Superseded by the migration script but kept as reference.
+- scripts/alter_constraint_word_table.sql — the raw ALTER, for dashboard use.
+
+VERIFICATION DONE:
+- npx tsc --noEmit passes.
+- Local module test: 74 items (23 noun / 19 verb / 21 adj / 11 adv),
+  grading accepts plurals/inflections/multiword ("hollowed out"),
+  rejects short/missing-word answers with hints.
+- Dev-server smoke test (port 3199): /api/stacks shows set 47 (74 forms),
+  /api/lesson-card/card returns kind word_table + table lesson blocks,
+  submit grades correct/wrong/hints correctly. Smoke-test attempt rows
+  were deleted from the DB afterwards.
+- npm run build still fails ONLY on /reading/to-kill-a-mockingbird
+  (pdfjs-dist needs Node 22+; local Node is v20.19.4). Fine on Vercel.
+  Do not try to fix.
+
+NOT DONE (deliberately):
+- User deploys to Vercel themselves from another terminal (NOT deployed).
+- analytics "forms judged" label polish was optional and skipped
+  (word_table treated as generic lesson card there — isLessonCardSet
+  already includes it).
+
+(End of file)
