@@ -533,7 +533,8 @@ export default function DrillPage() {
     set.card_type === "para_gapfill" ||
     set.card_type === "sentence_expansion" ||
     set.card_type === "sentence_expansion_mcq" ||
-    set.card_type === "word_table";
+    set.card_type === "word_table" ||
+    set.card_type === "spelling_dictation";
 
   const isCombineSeqCard = (set: any) =>
     set.card_type === "combine_seq";
@@ -607,6 +608,9 @@ export default function DrillPage() {
     }
     if (set.card_type === "spelling_quiz") {
       return { label: "⏱️ Spelling Speed Quiz", classes: "bg-sky-500/15 text-sky-300" };
+    }
+    if (set.card_type === "spelling_dictation") {
+      return { label: "🎧 Spelling Dictation", classes: "bg-sky-500/15 text-sky-300" };
     }
     if (set.card_type === "passage") {
       return { label: "📖 Reading Passage", classes: "bg-rose-500/15 text-rose-300" };
@@ -1743,7 +1747,7 @@ function LessonSetCard({
               </span>
             )}
             <span className="text-[10px] text-white/40">
-              {set.card_type === "study" ? "Unit notes" : set.card_type === "definition_recall" ? <>{set.question_count} words • 3 stages</> : set.card_type === "spelling_quiz" ? <>{set.question_count} words • 5 min run{set.spellingProgress ? <> • <span className="text-sky-300">{set.spellingProgress.percent}% learned</span></> : null}</> : <>{set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : set.card_type === "word_table" ? "forms" : "sentences") : "questions"}</>}
+              {set.card_type === "study" ? "Unit notes" : set.card_type === "definition_recall" ? <>{set.question_count} words • 3 stages</> : set.card_type === "spelling_quiz" ? <>{set.question_count} words • 5 min run{set.spellingProgress ? <> • <span className="text-sky-300">{set.spellingProgress.percent}% learned</span></> : null}</> : <>{set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : set.card_type === "word_table" ? "forms" : set.card_type === "spelling_dictation" ? "words to spell" : "sentences") : "questions"}</>}
             </span>
           </div>
         </div>

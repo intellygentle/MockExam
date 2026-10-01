@@ -9,6 +9,7 @@ import { buildFreeWritePart1, buildFreeWritePart2, getRandomNudge } from "./sent
 import { editorialWordFamiliesCard, gradeWordForm } from "./word-table-cards";
 import { definitionRecallCard } from "./definition-recall-card";
 import { spellingQuizCard } from "./spelling-quiz-card";
+import { spellingDictationCard, normalizeSpellingDictation } from "./spelling-dictation-card";
 
 /**
  * ============================================================
@@ -110,13 +111,15 @@ export type LessonQuestion = {
   stage?: number;
   /** Spelling-quiz cards: the two rival spellings shown as options A and B. */
   spellingOptions?: { a: string; b: string };
+  /** Spelling-dictation cards: the word to pronounce via text-to-speech. */
+  speakWord?: string;
   /** Spelling-quiz cards: which of the two spellings is the real word. */
   correctOption?: "a" | "b";
   /** Spelling-quiz cards: disambiguating note, e.g. "(verb)". */
   note?: string;
 };
 
-export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table" | "definition_recall" | "spelling_quiz";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table" | "definition_recall" | "spelling_quiz" | "spelling_dictation";
 
 export type LessonCardDef = {
   slug: string;
@@ -523,6 +526,11 @@ export function gradeQuestionWithHints(
     });
     return { correct, hints: correct ? [] : question.hints };
   }
+  if (card.kind === "spelling_dictation") {
+    const correct =
+      normalizeSpellingDictation(studentText) === normalizeSpellingDictation(question.answer);
+    return { correct, hints: correct ? [] : question.hints };
+  }
   if (card.kind === "classify") {
     const correct = normalizeClassification(studentText) === normalizeClassification(question.answer);
     return { correct, hints: correct ? [] : question.hints };
@@ -555,7 +563,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table" || cardType === "definition_recall" || cardType === "spelling_quiz") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table" || cardType === "definition_recall" || cardType === "spelling_quiz" || cardType === "spelling_dictation") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -565,6 +573,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
 const CARDS: Record<string, LessonCardDef> = {
   [definitionRecallCard.slug]: definitionRecallCard,
   [spellingQuizCard.slug]: spellingQuizCard,
+  [spellingDictationCard.slug]: spellingDictationCard,
   "sentence-types-basics": {
     slug: "sentence-types-basics",
     title: "Sentence Types",

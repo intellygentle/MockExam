@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     }
 
     const cardType = set.card_type || "quiz";
-    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table" && cardType !== "definition_recall" && cardType !== "spelling_quiz") {
+    if (cardType !== "capitalization" && cardType !== "sentence_types" && cardType !== "sentence_combining" && cardType !== "true_false" && cardType !== "combine_seq" && cardType !== "error_correction" && cardType !== "para_gapfill" && cardType !== "sentence_expansion" && cardType !== "sentence_expansion_mcq" && cardType !== "word_table" && cardType !== "definition_recall" && cardType !== "spelling_quiz" && cardType !== "spelling_dictation") {
       return NextResponse.json({ error: "This drill set is not a lesson card" }, { status: 400 });
     }
 
@@ -99,6 +99,10 @@ export async function GET(req: Request) {
         spellingOptions: card.kind === "spelling_quiz" ? q.spellingOptions ?? null : undefined,
         correctOption: card.kind === "spelling_quiz" ? q.correctOption ?? "a" : undefined,
         note: card.kind === "spelling_quiz" ? q.note ?? "" : undefined,
+        // Dictation cards need the word client-side for the speech synthesiser
+        // (British English pronunciation); it is never rendered as text before
+        // the student submits — grading still happens on the server.
+        speakWord: card.kind === "spelling_dictation" ? q.speakWord ?? q.answer : undefined,
       })),
       lineCount: card.questions.length,
       runSeconds: card.kind === "spelling_quiz" ? SPELLING_QUIZ_RUN_SECONDS : undefined,

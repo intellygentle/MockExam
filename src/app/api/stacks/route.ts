@@ -70,7 +70,8 @@ export async function GET(req: Request) {
               cardType === "word_table" ||
               cardType === "study" ||
               cardType === "definition_recall" ||
-              cardType === "spelling_quiz";
+              cardType === "spelling_quiz" ||
+              cardType === "spelling_dictation";
             const isPassageCard = cardType === "passage";
             const isVocabCard = cardType === "vocabulary";
 

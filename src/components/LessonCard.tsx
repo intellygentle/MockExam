@@ -6,13 +6,13 @@ import confetti from "canvas-confetti";
 import {
   ArrowLeft, Lightbulb, Loader2, CheckCircle2, XCircle,
   Trophy, Send, ShieldCheck, BookOpen, PencilLine, RotateCcw,
-  BadgeCheck, Braces, Merge, Scale, Table
+  BadgeCheck, Braces, Merge, Scale, Table, Volume2
 } from "lucide-react";
 
 import LessonBlocks, { type LessonBlock } from "@/components/LessonBlocks";
 
 type LineResult = { index: number; correct: boolean; hints: string[] };
-type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "word_table";
+type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "word_table" | "spelling_dictation";
 
 /** Options shown for classify cards (sentence types). */
 const CLASSIFY_OPTIONS = ["Simple", "Compound", "Complex", "Compound-Complex"];
@@ -36,6 +36,27 @@ const fireConfetti = () => {
   }, 300);
 };
 
+/**
+ * Pronounce a word in a British English voice using the browser's built-in
+ * speech synthesiser. Falls back to an en-GB language tag when no explicitly
+ * British voice is installed.
+ */
+const speakBritish = (text: string) => {
+  if (typeof window === "undefined" || !("speechSynthesis" in window) || !text) return;
+  const synth = window.speechSynthesis;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-GB";
+  utterance.rate = 0.85;
+  const voices = synth.getVoices();
+  const british =
+    voices.find((v) => v.lang === "en-GB") ||
+    voices.find((v) => (v.lang || "").toLowerCase().startsWith("en-gb")) ||
+    voices.find((v) => (v.lang || "").toLowerCase() === "en_gb");
+  if (british) utterance.voice = british;
+  synth.cancel();
+  synth.speak(utterance);
+};
+
 export default function LessonCard({ set, studentName, schoolName, freshStart, onDone }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,7 +64,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
   const [title, setTitle] = useState(set.title);
   const [description, setDescription] = useState(set.description);
   const [lesson, setLesson] = useState<LessonBlock[]>([]);
-  const [prompts, setPrompts] = useState<{ prompt: string; source: string }[]>([]);
+  const [prompts, setPrompts] = useState<{ prompt: string; source: string; speakWord?: string }[]>([]);
   const [edits, setEdits] = useState<string[]>([]);
   const [selections, setSelections] = useState<(string | null)[]>([]);
   const [results, setResults] = useState<(LineResult | null)[]>([]);
@@ -59,6 +80,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
   const isCombine = kind === "combine";
   const isTrueFalse = kind === "true_false";
   const isWordTable = kind === "word_table";
+  const isDictation = kind === "spelling_dictation";
 
   // ── Load card (lesson + prompts). Answers never leave the server. ──
   useEffect(() => {
@@ -73,13 +95,13 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
         }
         const data = await res.json();
         if (cancelled) return;
-        setKind(data.kind === "true_false" ? "true_false" : data.kind === "classify" ? "classify" : data.kind === "combine" ? "combine" : data.kind === "word_table" ? "word_table" : "capitalize");
+        setKind(data.kind === "true_false" ? "true_false" : data.kind === "classify" ? "classify" : data.kind === "combine" ? "combine" : data.kind === "word_table" ? "word_table" : data.kind === "spelling_dictation" ? "spelling_dictation" : "capitalize");
         setTitle(data.title || set.title);
         setDescription(data.description || set.description);
         setLesson(data.lesson || []);
         setPrompts(data.items || []);
         const lineCount = data.lineCount || data.items?.length || 0;
-        setEdits((data.items || []).map((it: any) => it.prompt));
+        setEdits((data.items || []).map((it: any) => (data.kind === "spelling_dictation" ? "" : it.prompt)));
         setSelections(new Array(lineCount).fill(null));
         setSubmissionNumber(data.attempt?.submissionsCount || 0);
         if (freshStart) {
@@ -238,7 +260,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
         if (data.attempt) setSubmissionNumber(data.attempt.submissionsCount || 0);
       }
     } catch {}
-    setEdits(prompts.map((p) => p.prompt));
+    setEdits(prompts.map((p) => (isDictation ? "" : p.prompt)));
     setSelections(new Array(prompts.length).fill(null));
     setResults(new Array(prompts.length).fill(null));
     setLocked(new Array(prompts.length).fill(false));
@@ -293,9 +315,9 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
           </button>
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <span className={`hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0 ${
-              isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : isWordTable ? "bg-orange-500/15 text-orange-300" : "bg-violet-500/15 text-violet-300"
+              isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : isWordTable ? "bg-orange-500/15 text-orange-300" : isDictation ? "bg-sky-500/15 text-sky-300" : "bg-violet-500/15 text-violet-300"
             }`}>
-              {isCombine ? <Merge size={11} /> : isClassify ? <Braces size={11} /> : isTrueFalse ? <Scale size={11} /> : isWordTable ? <Table size={11} /> : <PencilLine size={11} />} {isCombine ? "Sentence Combining" : isClassify ? "Sentence Types" : isTrueFalse ? "True or False" : isWordTable ? "Words Table" : "Capitalization"}
+              {isCombine ? <Merge size={11} /> : isClassify ? <Braces size={11} /> : isTrueFalse ? <Scale size={11} /> : isWordTable ? <Table size={11} /> : isDictation ? <Volume2 size={11} /> : <PencilLine size={11} />} {isCombine ? "Sentence Combining" : isClassify ? "Sentence Types" : isTrueFalse ? "True or False" : isWordTable ? "Words Table" : isDictation ? "Spelling Dictation" : "Capitalization"}
             </span>
             <span className="text-[11px] sm:text-sm font-bold text-white truncate">{title}</span>
           </div>
@@ -334,7 +356,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
         {/* ── LEFT: LESSON NOTE ── */}
         <div className="card space-y-5 lg:sticky lg:top-24">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : isWordTable ? "bg-orange-500/15 text-orange-300" : "bg-violet-500/15 text-violet-300"}`}>
+            <div className={`p-2.5 rounded-xl ${isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : isWordTable ? "bg-orange-500/15 text-orange-300" : isDictation ? "bg-sky-500/15 text-sky-300" : "bg-violet-500/15 text-violet-300"}`}>
               <BookOpen size={22} />
             </div>
             <div>
@@ -361,7 +383,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                 </motion.div>
                 <div>
                   <h2 className="text-3xl font-heading font-bold text-white">🏆 Lesson Perfected!</h2>
-                  <p className="text-white/60 mt-1.5">All {totalLines} {isCombine ? "passage chunks rewritten" : isClassify ? "sentences classified" : isTrueFalse ? "statements answered correctly" : isWordTable ? "word forms used correctly" : "sentences correctly capitalized"}.</p>
+                  <p className="text-white/60 mt-1.5">All {totalLines} {isCombine ? "passage chunks rewritten" : isClassify ? "sentences classified" : isTrueFalse ? "statements answered correctly" : isWordTable ? "word forms used correctly" : isDictation ? "words correctly spelt" : "sentences correctly capitalized"}.</p>
                 </div>
 
                 <div className="bg-policeGreen/10 border border-policeGreen/25 rounded-2xl p-5 text-left space-y-3">
@@ -405,22 +427,22 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
               className="card space-y-5">
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-xl ${isCombine ? "bg-sky-500/15 text-sky-300" : isClassify ? "bg-teal-500/15 text-teal-300" : isTrueFalse ? "bg-emerald-500/15 text-emerald-300" : isWordTable ? "bg-orange-500/15 text-orange-300" : "bg-policeGold/15 text-policeGold"}`}>
-                  {isCombine ? <Merge size={22} /> : isClassify ? <Braces size={22} /> : isTrueFalse ? <Scale size={22} /> : isWordTable ? <Table size={22} /> : <PencilLine size={22} />}
+                  {isCombine ? <Merge size={22} /> : isClassify ? <Braces size={22} /> : isTrueFalse ? <Scale size={22} /> : isWordTable ? <Table size={22} /> : isDictation ? <Volume2 size={22} /> : <PencilLine size={22} />}
                 </div>
                 <div>
                   <h2 className="text-xl font-heading font-bold text-white leading-tight">
-                    {isCombine ? "Rewrite the Passage Chunks" : isClassify ? "Classify the Sentences" : isTrueFalse ? "Judge the Statements" : isWordTable ? "Write a Sentence for Each Form" : "Rewrite the Sentences"}
+                    {isCombine ? "Rewrite the Passage Chunks" : isClassify ? "Classify the Sentences" : isTrueFalse ? "Judge the Statements" : isWordTable ? "Write a Sentence for Each Form" : isDictation ? "Type the Words You Hear" : "Rewrite the Sentences"}
                   </h2>
                   <p className="text-[10px] uppercase tracking-widest text-white/40">
-                    {isCombine ? "Combine the choppy sentences" : isClassify ? "Pick the correct sentence type" : isTrueFalse ? "Pick True or False" : isWordTable ? "Use the exact word form" : "Add the correct capitals"}
+                    {isCombine ? "Combine the choppy sentences" : isClassify ? "Pick the correct sentence type" : isTrueFalse ? "Pick True or False" : isWordTable ? "Use the exact word form" : isDictation ? "Listen & spell" : "Add the correct capitals"}
                   </p>
                 </div>
               </div>
 
               <div className={`border rounded-xl p-3.5 flex items-start gap-2.5 ${
-                isCombine ? "bg-sky-500/10 border-sky-500/25" : isClassify ? "bg-teal-500/10 border-teal-500/25" : isTrueFalse ? "bg-emerald-500/10 border-emerald-500/25" : isWordTable ? "bg-orange-500/10 border-orange-500/25" : "bg-violet-500/10 border-violet-500/25"
+                isCombine ? "bg-sky-500/10 border-sky-500/25" : isClassify ? "bg-teal-500/10 border-teal-500/25" : isTrueFalse ? "bg-emerald-500/10 border-emerald-500/25" : isWordTable ? "bg-orange-500/10 border-orange-500/25" : isDictation ? "bg-sky-500/10 border-sky-500/25" : "bg-violet-500/10 border-violet-500/25"
               }`}>
-                <Lightbulb size={16} className={`${isCombine ? "text-sky-300" : isClassify ? "text-teal-300" : isTrueFalse ? "text-emerald-300" : isWordTable ? "text-orange-300" : "text-violet-300"} shrink-0 mt-0.5`} />
+                <Lightbulb size={16} className={`${isCombine ? "text-sky-300" : isClassify ? "text-teal-300" : isTrueFalse ? "text-emerald-300" : isWordTable ? "text-orange-300" : isDictation ? "text-sky-300" : "text-violet-300"} shrink-0 mt-0.5`} />
                 <p className="text-xs text-white/70 leading-relaxed">
                   {isCombine ? (
                     <>Rewrite each chunk below, combining the choppy simple sentences into <span className="text-sky-300 font-semibold">fewer, more sophisticated sentences</span>. Keep every key fact, and join clauses with a FANBOYS word, a subordinating conjunction, or a semicolon. All {totalLines} chunks must be perfected to master the lesson.</>
@@ -430,6 +452,8 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                     <>Read each statement carefully, then decide if it is <span className="text-emerald-300 font-semibold">True or False</span>. Watch out for absolute words like <span className="text-emerald-300 font-semibold">always, never, every, all</span> — they usually make a statement false. All {totalLines} must be right to master the lesson.</>
                   ) : isWordTable ? (
                     <>Study the word families table on the left, then write <span className="text-orange-300 font-semibold">one original sentence</span> for every form of each word — use the exact noun, verb, adjective or adverb shown in the table. Your sentence must genuinely use the word in that role. All {totalLines} forms must be accepted to master the lesson.</>
+                  ) : isDictation ? (
+                    <>Listen to each word in <span className="text-sky-300 font-semibold">British English</span> and read its phonetic transcription, then type the correct spelling. Capital letters are not required. All {totalLines} words must be spelt perfectly to master the lesson.</>
                   ) : (
                     <>Fix the <span className="text-violet-300 font-semibold">capitalization only</span> — don't change any words,
                     spellings or punctuation. All {totalLines} sentences must be perfect to master the lesson.</>
@@ -456,7 +480,9 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                       const isCorrect = !!result?.correct;
                       const rows = isCombine
                         ? Math.max(4, Math.ceil((edits[i]?.length || 0) / 52))
-                        : Math.max(2, Math.ceil((edits[i]?.length || 0) / 52));
+                        : isDictation
+                          ? 1
+                          : Math.max(2, Math.ceil((edits[i]?.length || 0) / 52));
                       return (
                         <div key={i} className="space-y-1.5">
                           <div className={`rounded-2xl border transition-all ${
@@ -473,7 +499,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                                 {i + 1}
                               </span>
                               <span className="text-[9px] uppercase tracking-widest text-white/40 flex-1">
-                                {isCombine ? "Chunk" : isTrueFalse ? "Statement" : isWordTable ? "Form" : "Sentence"} {i + 1}
+                                {isCombine ? "Chunk" : isTrueFalse ? "Statement" : isWordTable ? "Form" : isDictation ? "Word" : "Sentence"} {i + 1}
                               </span>
                               {isCorrect ? (
                                 <span className="text-[9px] font-bold text-policeGreen bg-policeGreen/10 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -484,7 +510,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                                   <XCircle size={10} /> Needs work
                                 </span>
                               ) : (
-                                <span className="text-[9px] text-white/30">{isClassify ? "Select a type" : isTrueFalse ? "Pick True or False" : isCombine ? "Rewrite & submit" : isWordTable ? "Write & submit" : "Edit & submit"}</span>
+                                <span className="text-[9px] text-white/30">{isClassify ? "Select a type" : isTrueFalse ? "Pick True or False" : isCombine ? "Rewrite & submit" : isWordTable ? "Write & submit" : isDictation ? "Listen & type" : "Edit & submit"}</span>
                               )}
                             </div>
 
@@ -497,6 +523,15 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                                       <span className="text-white/25 shrink-0">•</span> {line}
                                     </p>
                                   ))}
+                                </div>
+                              ) : isDictation ? (
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                                  <span className="text-lg sm:text-xl font-mono font-bold text-sky-200 tracking-tight">{prompt.prompt}</span>
+                                  <button type="button"
+                                    onClick={() => prompt.speakWord && speakBritish(prompt.speakWord)}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2.5 py-1.5 rounded-full hover:bg-sky-500/25 transition">
+                                    <Volume2 size={13} /> Play pronunciation
+                                  </button>
                                 </div>
                               ) : (
                                 <p className="text-sm sm:text-base text-white/90 leading-relaxed">{prompt.prompt}</p>
@@ -544,7 +579,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                                 className="bg-amber-500/10 border border-amber-500/25 rounded-xl px-3.5 py-2.5 overflow-hidden">
                                 <p className="text-[10px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5 mb-1">
-                                  <Lightbulb size={11} /> Hint for {isTrueFalse ? "statement" : isCombine ? "chunk" : isWordTable ? "form" : "sentence"} {i + 1}
+                                  <Lightbulb size={11} /> Hint for {isTrueFalse ? "statement" : isCombine ? "chunk" : isWordTable ? "form" : isDictation ? "word" : "sentence"} {i + 1}
                                 </p>
                                 <ul className="space-y-1">
                                   {(result.hints || []).map((hint, j) => (
@@ -566,7 +601,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
               {/* Progress */}
               <div className="flex items-center justify-between text-xs">
                 <span className="uppercase tracking-widest text-white/40 text-[10px]">Mastery Progress</span>
-                <span className="text-white/70 font-semibold">{correctCount}/{totalLines} {isCombine ? "chunks perfect" : isClassify ? "classified" : isTrueFalse ? "statements correct" : isWordTable ? "forms accepted" : "sentences correct"}</span>
+                <span className="text-white/70 font-semibold">{correctCount}/{totalLines} {isCombine ? "chunks perfect" : isClassify ? "classified" : isTrueFalse ? "statements correct" : isWordTable ? "forms accepted" : isDictation ? "words spelt correctly" : "sentences correct"}</span>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <motion.div
@@ -579,7 +614,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
 
               {correctCount > 0 && correctCount < totalLines && (
                 <p className="text-[11px] text-white/40 -mt-1">
-                  ✓ Correct {isClassify ? "sentences are locked" : isTrueFalse ? "statements are locked" : isCombine ? "chunks are locked" : isWordTable ? "forms are locked" : "lines are locked"} — fix the remaining {totalLines - correctCount} to perfect the lesson.
+                  ✓ Correct {isClassify ? "sentences are locked" : isTrueFalse ? "statements are locked" : isCombine ? "chunks are locked" : isWordTable ? "forms are locked" : isDictation ? "words are locked" : "lines are locked"} — fix the remaining {totalLines - correctCount} to perfect the lesson.
                 </p>
               )}
 

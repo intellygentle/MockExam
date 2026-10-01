@@ -212,6 +212,31 @@ const questions: LessonQuestion[] = SECTIONS.flatMap((section) =>
 );
 
 /**
+ * The 120-word bank, exposed as a flat list so sibling cards (e.g. the
+ * dictation card) can reuse exactly the same words and RP transcriptions
+ * without duplicating the content.
+ */
+export type SpellingQuizWord = {
+  /** The correctly spelled word. */
+  word: string;
+  /** Its British English (RP) phonetic transcription. */
+  pronunciation: string;
+  /** Disambiguating note, e.g. "(verb)" — empty when unambiguous. */
+  note: string;
+  /** The section the word belongs to. */
+  section: string;
+};
+
+export const SPELLING_QUIZ_WORDS: SpellingQuizWord[] = SECTIONS.flatMap((section) =>
+  section.items.map(([pronunciation, note, a, b, answer]) => ({
+    word: answer === "a" ? a : b,
+    pronunciation,
+    note: note || "",
+    section: section.name,
+  }))
+);
+
+/**
  * The word key used to track progress: the correctly spelled word. All 120
  * are unique, and the key stays valid even if the deck is re-ordered.
  */
