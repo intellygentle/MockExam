@@ -71,7 +71,9 @@ export async function GET(req: Request) {
               cardType === "study" ||
               cardType === "definition_recall" ||
               cardType === "spelling_quiz" ||
-              cardType === "spelling_dictation";
+              cardType === "spelling_dictation" ||
+              cardType === "spelling_listening" ||
+              cardType === "spelling_story";
             const isPassageCard = cardType === "passage";
             const isVocabCard = cardType === "vocabulary";
 

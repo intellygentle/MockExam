@@ -153,7 +153,9 @@ const isLessonCardSet = (t: string | null | undefined) =>
   t === "study" ||
   t === "definition_recall" ||
   t === "spelling_quiz" ||
-  t === "spelling_dictation";
+  t === "spelling_dictation" ||
+  t === "spelling_listening" ||
+  t === "spelling_story";
 
 export default function AdminDrillAnalyticsPage() {
   const [sets, setSets] = useState<DrillSetSummary[]>([]);

@@ -1,58 +1,91 @@
-=== MOCKEXAM SESSION HANDOVER — Words Table Card (Editorials) ===
-Date: 2026-09-14 (evening session)
-Branch: main, synced with origin/main through commit 15a22d2
-STATUS: Words Table card COMPLETE, LIVE IN DB, PUSHED. Nothing pending.
+=== MOCKEXAM SESSION HANDOVER — Word Vault Listening & Story Challenge ===
+Date: 2026-10-02
+Branch: main
+STATUS: Two new Spelling Bee cards CODE-COMPLETE. DB scripts written but NOT
+YET RUN — the user must run them (see "TO GO LIVE" below). Not deployed.
 
 ⚠ CREDENTIAL RULES (still apply — see git history for the full original list)
   ✗ Never cat/print old scripts/insert_*.py (they hardcode an old service key),
     never print keys/tokens from .env / .env.local, never paste credentials.
   ✓ .env.local: SUPABASE_URL + SUPABASE_ANON_KEY
   ✓ .env: SUPABASE_ACCESS_TOKEN (Supabase personal access token from the
-    account that OWNS the MockExam project — ref ifrxmoftzfyhfyconvxa.
-    Note: the first token tried belonged to a different account and got 403.)
+    account that OWNS the MockExam project — ref ifrxmoftzfyhfyconvxa).
   ✓ The Management API (api.supabase.com/v1/projects/<ref>/database/query)
     CAN run DDL; PostgREST (anon/service keys) CANNOT.
-  ✓ .env* is gitignored (verified before commit 15a22d2).
+  ✓ .env* is gitignored.
 
 ═════════════════════════════════════════════════════════════
-SHIPPED THIS SESSION (commit 15a22d2, pushed)
+SHIPPED THIS SESSION
 ═════════════════════════════════════════════════════════════
-"Words Table: Editorial Word Families" lesson card (drill set id=47):
-- card_type "word_table", slug "editorial-word-families", level ss3,
-  74 word-form items across 23 family sections, in Editorials stack (id=6,
-  sort_order 8). Live in DB and verified via API.
-- Files: src/lib/server/word-table-cards.ts (data + grading),
-  lesson-cards.ts routing, LessonCard.tsx rendering (orange theme, Table
-  icon, "Write & submit", "forms accepted/locked", "word forms used
-  correctly"), drill/page.tsx + analytics + 5 API routes updated.
-- DB constraint drill_sets_card_type_check widened to include word_table
-  (and error_correction/para_gapfill/sentence_expansion* which the old
-  constraint predated).
+Source: /sdcard/Download/Word_Vault_Listening_and_Story_Challenge.docx —
+Activity A (120 dictation sentences) + Activity B (6-chapter story, 120 gaps).
+Implemented as TWO Spelling Bee cards (one per activity), per user's choice.
 
-SCRIPTS (all idempotent, keys loaded from .env/.env.local at runtime):
-- scripts/run_word_table_migration.py — ALTER + insert + link via Management
-  API. ALREADY RUN — do NOT re-run unless rebuilding from scratch.
-- scripts/insert_word_table_card.py — PostgREST-only insert (anon/service
-  key). Superseded by the migration script but kept as reference.
-- scripts/alter_constraint_word_table.sql — the raw ALTER, for dashboard use.
+CONTENT (generated — do not hand-edit):
+- scripts/generate_word_vault_listening_content.py — parses the docx (zip +
+  xml.etree, no python-docx) and emits the committed TS data module. Validates
+  120 items / 6 chapters / 120 gaps / IDs 1..120 before writing.
+- src/lib/server/word-vault-challenge-content.ts — AUTO-GENERATED. Holds
+  DICTATION_ITEMS (id, category, target, ipa, note, sentence, typicalError,
+  capitalRequired) and STORY_CHAPTERS (paragraphs → text/gap chunks with the
+  gap word). Re-run the generator only if the docx changes.
+
+SERVER:
+- src/lib/server/word-vault-grading.ts — Section 6.1 checking: NFC, straight
+  quotes, dash→space, token punctuation strip, case-insensitive except
+  February/Wednesday; Needleman–Wunsch word alignment; Perfect / Word correct
+  / Incorrect / Incomplete; typical-error + American-spelling feedback.
+- src/lib/server/spelling-listening-card.ts — Activity A card
+  (kind "spelling_listening", slug "word-vault-listening").
+- src/lib/server/spelling-story-card.ts — Activity B card
+  (kind "spelling_story", slug "word-vault-story").
+- src/lib/server/word-vault-progress.ts — per-word first-try tracking on
+  table word_vault_progress; marks the card mastered via capitalization_attempts
+  when all 120 words are first-try correct.
+
+CLIENT (browser en-GB speech synthesis, spec Strategy 3 — no cloud TTS):
+- src/lib/useBritishVoice.ts — prefers Google UK English / Microsoft
+  Libby-Sonia-Ryan / Daniel / Serena / Kate / Martha, else any en-GB; reports
+  when none exists, never falls back to another accent.
+- src/components/BritishVoiceCheck.tsx — the pre-activity voice-check screen.
+- src/components/SpellingListeningCard.tsx — Activity A (section / full / review
+  modes, Play + Slow, 2 attempts, results with per-category breakdown).
+- src/components/SpellingStoryCard.tsx — Activity B (play all / per chapter,
+  progressive reveal, fixed-width gap box, replay word/sentence, pause, speed,
+  skip, chapter + total summaries).
+
+API:
+- src/app/api/lesson-card/word-vault/route.ts — GET card payload + progress,
+  POST action "check" (grade one answer server-side) and "record" (fold a run
+  into word_vault_progress). Deliberately NOT added to the generic
+  /api/lesson-card/card | /submit whitelists, so sentences/keys never leak.
+
+REGISTRATION:
+- lesson-cards.ts (CardKind + CARDS + getLessonCard), drill/page.tsx (phases,
+  handlers, badges, stack buttons, dedicated render blocks), api/stacks,
+  api/drills/sets, api/drills/attempts (x2), admin analytics isLessonCardSet.
+
+═════════════════════════════════════════════════════════════
+TO GO LIVE (user runs these; both read keys from .env/.env.local)
+═════════════════════════════════════════════════════════════
+1. py scripts/create_word_vault_progress.py   # creates word_vault_progress
+2. py scripts/insert_word_vault_cards.py      # creates + links both drill sets,
+                                              # widens drill_sets_card_type_check
+Both are idempotent. Until step 1 runs, POST "record" returns 500 (client
+swallows it — the activity still plays, progress just isn't saved).
 
 VERIFICATION DONE:
-- npx tsc --noEmit passes.
-- Local module test: 74 items (23 noun / 19 verb / 21 adj / 11 adv),
-  grading accepts plurals/inflections/multiword ("hollowed out"),
-  rejects short/missing-word answers with hints.
-- Dev-server smoke test (port 3199): /api/stacks shows set 47 (74 forms),
-  /api/lesson-card/card returns kind word_table + table lesson blocks,
-  submit grades correct/wrong/hints correctly. Smoke-test attempt rows
-  were deleted from the DB afterwards.
-- npm run build still fails ONLY on /reading/to-kill-a-mockingbird
-  (pdfjs-dist needs Node 22+; local Node is v20.19.4). Fine on Vercel.
-  Do not try to fix.
+- npx tsc --noEmit passes clean.
+- npx next build compiles successfully; it still fails ONLY on
+  /reading/to-kill-a-mockingbird (pdfjs-dist needs Node 22+; local Node is
+  v20.19.4). Pre-existing — do not try to fix.
+- Generator validated 120 dictation items, 6 chapters, 120 gaps, IDs 1..120.
 
-NOT DONE (deliberately):
-- User deploys to Vercel themselves from another terminal (NOT deployed).
-- analytics "forms judged" label polish was optional and skipped
-  (word_table treated as generic lesson card there — isLessonCardSet
-  already includes it).
+NOT DONE / FOR NEXT SESSION:
+- Run the two DB scripts above and smoke-test both cards in the browser
+  (British voice present? narration pauses at each gap? progress saves?).
+- Optional (spec B7): Flow mode for the story (no pause, fill gaps any order).
+- Optional: pre-generated cloud MP3s (spec 3.3) for exact pronunciations of
+  separate / minute / does / Wednesday / February / programme / the "ough" set.
 
 (End of file)

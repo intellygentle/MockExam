@@ -10,6 +10,8 @@ import { editorialWordFamiliesCard, gradeWordForm } from "./word-table-cards";
 import { definitionRecallCard } from "./definition-recall-card";
 import { spellingQuizCard } from "./spelling-quiz-card";
 import { spellingDictationCard, normalizeSpellingDictation } from "./spelling-dictation-card";
+import { spellingListeningCard } from "./spelling-listening-card";
+import { spellingStoryCard } from "./spelling-story-card";
 
 /**
  * ============================================================
@@ -119,7 +121,7 @@ export type LessonQuestion = {
   note?: string;
 };
 
-export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table" | "definition_recall" | "spelling_quiz" | "spelling_dictation";
+export type CardKind = "capitalize" | "classify" | "combine" | "true_false" | "combine_seq" | "error_correction" | "para_gapfill" | "sentence_expansion" | "word_table" | "definition_recall" | "spelling_quiz" | "spelling_dictation" | "spelling_listening" | "spelling_story";
 
 export type LessonCardDef = {
   slug: string;
@@ -563,7 +565,7 @@ export function getLessonCard(cardType: string | null | undefined, slug: string 
       })),
     };
   }
-  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table" || cardType === "definition_recall" || cardType === "spelling_quiz" || cardType === "spelling_dictation") {
+  if (cardType === "sentence_types" || cardType === "sentence_combining" || cardType === "true_false" || cardType === "combine_seq" || cardType === "error_correction" || cardType === "para_gapfill" || cardType === "sentence_expansion" || cardType === "sentence_expansion_mcq" || cardType === "word_table" || cardType === "definition_recall" || cardType === "spelling_quiz" || cardType === "spelling_dictation" || cardType === "spelling_listening" || cardType === "spelling_story") {
     return CARDS[slug] ?? null;
   }
   return null;
@@ -574,6 +576,8 @@ const CARDS: Record<string, LessonCardDef> = {
   [definitionRecallCard.slug]: definitionRecallCard,
   [spellingQuizCard.slug]: spellingQuizCard,
   [spellingDictationCard.slug]: spellingDictationCard,
+  [spellingListeningCard.slug]: spellingListeningCard,
+  [spellingStoryCard.slug]: spellingStoryCard,
   "sentence-types-basics": {
     slug: "sentence-types-basics",
     title: "Sentence Types",
