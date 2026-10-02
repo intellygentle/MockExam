@@ -1035,7 +1035,7 @@ export default function DrillPage() {
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <BrainCircuit size={14} className="text-blue-400 mx-auto mb-0.5" />
                       <p className="text-sm font-bold text-white">{set.question_count}</p>
-                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isStudyCard(set) ? "Notes" : isVocabCard(set) ? "Vocab Words" : isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : set.card_type === "word_table" ? "Forms" : "Sentences") : "Questions"}</p>
+                      <p className="text-[8px] uppercase tracking-widest text-white/40">{isStudyCard(set) ? "Notes" : isVocabCard(set) ? "Vocab Words" : isPassageCard(set) ? "Discussion Qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "Statements" : set.card_type === "word_table" ? "Forms" : set.card_type === "spelling_dictation" ? "Words" : "Sentences") : "Questions"}</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-2 text-center">
                       <Clock size={14} className="text-policeGold mx-auto mb-0.5" />
@@ -1857,7 +1857,7 @@ function LessonSetCard({
               </span>
             )}
             <span className="text-[10px] text-white/40">
-              {set.card_type === "study" ? "Unit notes" : set.card_type === "definition_recall" ? <>{set.question_count} words • 3 stages</> : set.card_type === "spelling_quiz" ? <>{set.question_count} words • 5 min run{set.spellingProgress ? <> • <span className="text-sky-300">{set.spellingProgress.percent}% learned</span></> : null}</> : set.card_type === "spelling_listening" ? <>{set.question_count} sentences • listen &amp; type</> : set.card_type === "spelling_story" ? <>6 chapters • {set.question_count} gaps</> : <>{set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : set.card_type === "word_table" ? "forms" : set.card_type === "spelling_dictation" ? "words to spell" : "sentences") : "questions"}</>}
+              {set.card_type === "study" ? "Unit notes" : set.card_type === "definition_recall" ? <>{set.question_count} words • 3 stages</> : set.card_type === "spelling_quiz" ? <>{set.question_count} words • 5 min run{set.spellingProgress ? <> • <span className="text-sky-300">{set.spellingProgress.percent}% learned</span></> : null}</> : set.card_type === "spelling_listening" ? <>{set.question_count} sentences • listen &amp; type</> : set.card_type === "spelling_story" ? <>6 chapters • {set.question_count} gaps</> : <>{set.question_count} {isVocabCard(set) ? (set.capitalization_slug === "spelling" ? "words • 6 stages" : "words") : isPassageCard(set) ? "discussion qs" : isLessonCard(set) ? (set.card_type === "true_false" ? "statements" : set.card_type === "word_table" ? "forms" : set.card_type === "spelling_dictation" ? "words • 6 stages" : "sentences") : "questions"}</>}
             </span>
           </div>
         </div>

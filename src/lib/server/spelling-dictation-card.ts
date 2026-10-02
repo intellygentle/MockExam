@@ -15,9 +15,10 @@ import { SPELLING_QUIZ_WORDS } from "./spelling-quiz-card";
  * text-to-speech engine and is never displayed before it is earned.
  *
  * The 120 words (and their transcriptions) are shared with the speed quiz so
- * both Spelling Bee cards test exactly the same bank. All 120 must be spelt
- * correctly to master the card; every retry is tracked by the lesson-card
- * submit route.
+ * both Spelling Bee cards test exactly the same bank. They are played in six
+ * stages of 20 — one per word section — and a stage must be spelt perfectly
+ * before the next unlocks. All 120 must be spelt correctly to master the card;
+ * every retry is tracked by the lesson-card submit route.
  */
 
 /** Letters in a word, ignoring anything that is not A–Z. */
@@ -46,7 +47,7 @@ export const spellingDictationCard: LessonCardDef = {
   slug: "spelling-dictation",
   title: "Spelling Dictation: Type What You Hear",
   description:
-    "Listen to each word pronounced in British English, study its phonetic transcription, then type the correct spelling. Spell all 120 words correctly to master the card — every retry is tracked.",
+    "Listen to each word pronounced in British English, study its phonetic transcription, then type the correct spelling. The 120 words come in 6 stages of 20 — clear one stage to unlock the next, and spell all 120 correctly to master the card. Every retry is tracked.",
   kind: "spelling_dictation",
   lesson: [
     { kind: "heading", text: "🎧 How this dictation card works" },
@@ -60,7 +61,8 @@ export const spellingDictationCard: LessonCardDef = {
         "🔊 Tap “Play pronunciation” to hear the word in a British English voice — play it as many times as you need.",
         "📖 The phonetic transcription (in /slashes/) is shown as a guide — read it alongside the audio.",
         "⌨️ Type the word exactly as it is spelt, then submit. Capital letters are not required (February = february).",
-        "✅ Get every word right to perfect the card.",
+        "🧭 The 120 words are split into 6 stages of 20 (one per section). Clear every word in a stage to unlock the next one — only the current stage is shown at a time.",
+        "✅ Get every word in all 6 stages right to perfect the card.",
         "🔁 Any word you miss stays open for another try — you'll get a hint, never the answer.",
         "📊 Every submission is recorded, so you can see how many tries it took to master the card.",
       ],

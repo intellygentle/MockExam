@@ -24,8 +24,9 @@ STACK_TITLE = "Spelling Bee"
 SET_TITLE = "Spelling Dictation: Type What You Hear"
 SET_DESCRIPTION = (
     "Listen to each word pronounced in British English (RP), read its phonetic "
-    "transcription, then type the correct spelling. All 120 words must be spelt "
-    "perfectly to master the card, and every retry is tracked."
+    "transcription, then type the correct spelling. The 120 words come in 6 "
+    "stages of 20 — clear a stage to unlock the next, and spell all 120 "
+    "perfectly to master the card. Every retry is tracked."
 )
 SLUG = "spelling-dictation"
 LEVEL = "ss3"

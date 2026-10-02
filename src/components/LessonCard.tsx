@@ -72,6 +72,8 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
   const [submitting, setSubmitting] = useState(false);
   const [submissionNumber, setSubmissionNumber] = useState(0);
   const [mastered, setMastered] = useState(false);
+  // Dictation is played in six stages of 20 words (one per word section).
+  const [stageIdx, setStageIdx] = useState(0);
   const celebratedRef = useRef(false);
 
   const totalLines = prompts.length;
@@ -111,6 +113,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
           setResults(new Array(lineCount).fill(null));
           setLocked(new Array(lineCount).fill(false));
           setSubmissionNumber(0);
+          setStageIdx(0);
           try {
             const startRes = await fetch("/api/lesson-card/submit", {
               method: "POST",
@@ -266,6 +269,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
     setLocked(new Array(prompts.length).fill(false));
     setMastered(false);
     setError("");
+    setStageIdx(0);
     celebratedRef.current = false;
   };
 
@@ -304,6 +308,20 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
     }
     section.indices.push(i);
   });
+
+  // ── Dictation stages (one section = 20 words per stage) ──
+  // Only the current stage is shown; a stage must be fully correct before the
+  // next one unlocks, and the whole card is still mastered only when all 120
+  // words are spelt correctly.
+  const currentStageIndices = isDictation ? sections[stageIdx]?.indices ?? [] : [];
+  const stageCorrectCount = currentStageIndices.filter((i) => results[i]?.correct).length;
+  const stageCleared = currentStageIndices.length > 0 && stageCorrectCount === currentStageIndices.length;
+  const clearedStages = (() => {
+    let n = 0;
+    while (n < sections.length && sections[n].indices.every((i) => results[i]?.correct)) n++;
+    return n;
+  })();
+  const visibleSections = isDictation ? sections.slice(stageIdx, stageIdx + 1) : sections;
 
   return (
     <div className="space-y-5 pb-10">
@@ -453,7 +471,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                   ) : isWordTable ? (
                     <>Study the word families table on the left, then write <span className="text-orange-300 font-semibold">one original sentence</span> for every form of each word — use the exact noun, verb, adjective or adverb shown in the table. Your sentence must genuinely use the word in that role. All {totalLines} forms must be accepted to master the lesson.</>
                   ) : isDictation ? (
-                    <>Listen to each word in <span className="text-sky-300 font-semibold">British English</span> and read its phonetic transcription, then type the correct spelling. Capital letters are not required. All {totalLines} words must be spelt perfectly to master the lesson.</>
+                    <>Listen to each word in <span className="text-sky-300 font-semibold">British English</span> and read its phonetic transcription, then type the correct spelling. Capital letters are not required. The {totalLines} words come in <span className="text-sky-300 font-semibold">{sections.length} stages of 20</span> — clear every word in a stage to unlock the next, and complete all {sections.length} stages to master the lesson.</>
                   ) : (
                     <>Fix the <span className="text-violet-300 font-semibold">capitalization only</span> — don't change any words,
                     spellings or punctuation. All {totalLines} sentences must be perfect to master the lesson.</>
@@ -461,23 +479,70 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                 </p>
               </div>
 
+              {/* Dictation stages: one stage (20 words) at a time */}
+              {isDictation && (
+                <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-3.5 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-sky-300">
+                      Stage {stageIdx + 1} of {sections.length}
+                    </span>
+                    <span className="text-[10px] text-white/50">{stageCorrectCount}/{currentStageIndices.length} correct</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sections.map((s, idx) => {
+                      const stageDone = s.indices.length > 0 && s.indices.every((i) => results[i]?.correct);
+                      const reachable = idx <= clearedStages;
+                      const isCurrent = idx === stageIdx;
+                      return (
+                        <button key={s.label} type="button" disabled={!reachable}
+                          onClick={() => { if (reachable) { setStageIdx(idx); window.scrollTo({ top: 0, behavior: "smooth" }); } }}
+                          title={s.label}
+                          className={`w-7 h-7 rounded-lg text-[11px] font-bold border transition ${
+                            isCurrent
+                              ? "border-sky-400/60 bg-sky-500/25 text-sky-100"
+                              : stageDone
+                                ? "border-policeGreen/40 bg-policeGreen/10 text-policeGreen hover:bg-policeGreen/20"
+                                : reachable
+                                  ? "border-white/15 bg-white/5 text-white/60 hover:bg-white/10"
+                                  : "border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed"
+                          }`}>
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-white/60">
+                    {sections[stageIdx]?.label}
+                  </p>
+                  {stageCleared && stageIdx + 1 < sections.length && (
+                    <button type="button"
+                      onClick={() => { setStageIdx(stageIdx + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      className="w-full flex items-center justify-center gap-2 bg-policeGreen/90 text-policeBlue font-bold py-2.5 rounded-xl hover:brightness-110 transition text-sm">
+                      <CheckCircle2 size={16} /> Stage {stageIdx + 1} cleared — start Stage {stageIdx + 2}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Items grouped by source section */}
               <div className="space-y-5">
-                {sections.map((section) => (
+                {visibleSections.map((section) => (
                   <div key={section.label} className="space-y-3">
                     <div className="flex items-center gap-2 pt-1">
                       <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-teal-300/80 bg-teal-500/10 border border-teal-500/20 px-2 py-1 rounded-full">
                         {section.label}
                       </span>
-                      <span className="text-[9px] text-white/30">{section.indices.length} {isCombine ? (section.indices.length === 1 ? "chunk" : "chunks") : isTrueFalse ? (section.indices.length === 1 ? "statement" : "statements") : isWordTable ? (section.indices.length === 1 ? "form" : "forms") : (section.indices.length === 1 ? "sentence" : "sentences")}</span>
+                      <span className="text-[9px] text-white/30">{section.indices.length} {isCombine ? (section.indices.length === 1 ? "chunk" : "chunks") : isTrueFalse ? (section.indices.length === 1 ? "statement" : "statements") : isWordTable ? (section.indices.length === 1 ? "form" : "forms") : isDictation ? (section.indices.length === 1 ? "word" : "words") : (section.indices.length === 1 ? "sentence" : "sentences")}</span>
                       <div className="flex-1 h-px bg-white/10" />
                     </div>
 
-                    {section.indices.map((i) => {
+                    {section.indices.map((i, localIdx) => {
                       const prompt = prompts[i];
                       const result = results[i];
                       const isLocked = locked[i];
                       const isCorrect = !!result?.correct;
+                      // Dictation numbers words 1–20 within each stage, not 1–120.
+                      const itemNumber = isDictation ? localIdx + 1 : i + 1;
                       const rows = isCombine
                         ? Math.max(4, Math.ceil((edits[i]?.length || 0) / 52))
                         : isDictation
@@ -496,10 +561,10 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                               <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${
                                 isCorrect ? "bg-policeGreen/20 text-policeGreen" : "bg-white/10 text-white/50"
                               }`}>
-                                {i + 1}
+                                {itemNumber}
                               </span>
                               <span className="text-[9px] uppercase tracking-widest text-white/40 flex-1">
-                                {isCombine ? "Chunk" : isTrueFalse ? "Statement" : isWordTable ? "Form" : isDictation ? "Word" : "Sentence"} {i + 1}
+                                {isCombine ? "Chunk" : isTrueFalse ? "Statement" : isWordTable ? "Form" : isDictation ? "Word" : "Sentence"} {itemNumber}
                               </span>
                               {isCorrect ? (
                                 <span className="text-[9px] font-bold text-policeGreen bg-policeGreen/10 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -579,7 +644,7 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                                 className="bg-amber-500/10 border border-amber-500/25 rounded-xl px-3.5 py-2.5 overflow-hidden">
                                 <p className="text-[10px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5 mb-1">
-                                  <Lightbulb size={11} /> Hint for {isTrueFalse ? "statement" : isCombine ? "chunk" : isWordTable ? "form" : isDictation ? "word" : "sentence"} {i + 1}
+                                  <Lightbulb size={11} /> Hint for {isTrueFalse ? "statement" : isCombine ? "chunk" : isWordTable ? "form" : isDictation ? "word" : "sentence"} {itemNumber}
                                 </p>
                                 <ul className="space-y-1">
                                   {(result.hints || []).map((hint, j) => (
@@ -612,9 +677,15 @@ export default function LessonCard({ set, studentName, schoolName, freshStart, o
                 />
               </div>
 
-              {correctCount > 0 && correctCount < totalLines && (
+              {isDictation ? (
+                currentStageIndices.length > 0 && stageCorrectCount < currentStageIndices.length && (
+                  <p className="text-[11px] text-white/40 -mt-1">
+                    ✓ Correct words are locked — clear the remaining {currentStageIndices.length - stageCorrectCount} in Stage {stageIdx + 1} to unlock {stageIdx + 1 < sections.length ? `Stage ${stageIdx + 2}` : "the final trophy"}.
+                  </p>
+                )
+              ) : correctCount > 0 && correctCount < totalLines && (
                 <p className="text-[11px] text-white/40 -mt-1">
-                  ✓ Correct {isClassify ? "sentences are locked" : isTrueFalse ? "statements are locked" : isCombine ? "chunks are locked" : isWordTable ? "forms are locked" : isDictation ? "words are locked" : "lines are locked"} — fix the remaining {totalLines - correctCount} to perfect the lesson.
+                  ✓ Correct {isClassify ? "sentences are locked" : isTrueFalse ? "statements are locked" : isCombine ? "chunks are locked" : isWordTable ? "forms are locked" : "lines are locked"} — fix the remaining {totalLines - correctCount} to perfect the lesson.
                 </p>
               )}
 
