@@ -1,8 +1,9 @@
 === MOCKEXAM SESSION HANDOVER — Word Vault Listening & Story Challenge ===
 Date: 2026-10-02
 Branch: main
-STATUS: Two new Spelling Bee cards CODE-COMPLETE. DB scripts written but NOT
-YET RUN — the user must run them (see "TO GO LIVE" below). Not deployed.
+STATUS: Two new Spelling Bee cards CODE-COMPLETE and LIVE. Both DB scripts have
+been run: word_vault_progress exists and both drill sets are created + linked
+into the Spelling Bee stack (see "DB SETUP — DONE" below). Not deployed.
 
 ⚠ CREDENTIAL RULES (still apply — see git history for the full original list)
   ✗ Never cat/print old scripts/insert_*.py (they hardcode an old service key),
@@ -66,13 +67,24 @@ REGISTRATION:
   api/drills/sets, api/drills/attempts (x2), admin analytics isLessonCardSet.
 
 ═════════════════════════════════════════════════════════════
-TO GO LIVE (user runs these; both read keys from .env/.env.local)
+DB SETUP — DONE (both scripts run 2026-10-02, both idempotent)
 ═════════════════════════════════════════════════════════════
-1. py scripts/create_word_vault_progress.py   # creates word_vault_progress
-2. py scripts/insert_word_vault_cards.py      # creates + links both drill sets,
-                                              # widens drill_sets_card_type_check
-Both are idempotent. Until step 1 runs, POST "record" returns 500 (client
-swallows it — the activity still plays, progress just isn't saved).
+1. python3 scripts/create_word_vault_progress.py
+   → created public.word_vault_progress (id, student_name, drill_set_id,
+     word_id, word_key, attempts, first_try_correct, last_typed,
+     created_at, updated_at); unique (student_name, drill_set_id, word_id);
+     lookup index; RLS read/insert/update policies; grants to anon/authenticated.
+     POST "record" now saves instead of returning 500.
+2. python3 scripts/insert_word_vault_cards.py
+   → widened drill_sets_card_type_check to add spelling_listening,
+     spelling_story (existing values preserved).
+   → stack "Spelling Bee" = id 9.
+   → drill set id 53 "Listening Dictation: Type What You Hear"
+     (spelling_listening, 120 q, 45 min, sort_order 4).
+   → drill set id 54 "Story Challenge: Listen & Fill the Gaps"
+     (spelling_story, 120 q, 60 min, sort_order 5).
+   Re-running prints "already exists / already linked".
+Note: `py` is not on PATH in this environment — use python3.
 
 VERIFICATION DONE:
 - npx tsc --noEmit passes clean.
@@ -82,8 +94,9 @@ VERIFICATION DONE:
 - Generator validated 120 dictation items, 6 chapters, 120 gaps, IDs 1..120.
 
 NOT DONE / FOR NEXT SESSION:
-- Run the two DB scripts above and smoke-test both cards in the browser
-  (British voice present? narration pauses at each gap? progress saves?).
+- Smoke-test both cards in the browser (British voice present? narration
+  pauses at each gap? progress saves?). The cards are live in the Spelling Bee
+  stack; nothing has been verified against the running app yet.
 - Optional (spec B7): Flow mode for the story (no pause, fill gaps any order).
 - Optional: pre-generated cloud MP3s (spec 3.3) for exact pronunciations of
   separate / minute / does / Wednesday / February / programme / the "ough" set.
