@@ -18,6 +18,7 @@ import CombineCard from "@/components/CombineCard";
 import ParaGapfillCard from "@/components/ParaGapfillCard";
 import SentenceExpansionCard from "@/components/SentenceExpansionCard";
 import DefinitionRecallCard from "@/components/DefinitionRecallCard";
+import RecallStackCard from "@/components/RecallStackCard";
 import SpellingCard from "@/components/SpellingCard";
 import SpellingQuizCard from "@/components/SpellingQuizCard";
 import SpellingListeningCard from "@/components/SpellingListeningCard";
@@ -728,6 +729,8 @@ export default function DrillPage() {
             <p className="text-xs text-white/50 mt-1">Your nickname, time spent, and scores are recorded for each drill set.</p>
           </div>
         </div>
+
+        <RecallStackCard studentName={studentName} schoolName={schoolName} />
 
         {/* ── LESSON STACKS ── */}
         {stacks.length > 0 && (

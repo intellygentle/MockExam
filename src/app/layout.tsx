@@ -39,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <nav className="flex flex-wrap items-center justify-start md:justify-end gap-x-4 sm:gap-x-5 gap-y-2">
                 <Link href="/practice" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Practice</Link>
                 <Link href="/study" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Study</Link>
+                <Link href="/recall" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Notes &amp; Recall</Link>
                 <Link href="/dashboard" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Progress</Link>
                 <Link href="/leaderboard" className="text-[11px] sm:text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-policeGold transition">Leaderboard</Link>
               </nav>

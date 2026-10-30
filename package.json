@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test:recall": "node --test scripts/subject-recall.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
@@ -20,6 +21,7 @@
     "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
     "@types/canvas-confetti": "^1.9.0",
     "@types/katex": "^0.16.8",
     "@types/node": "^20",

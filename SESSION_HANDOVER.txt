@@ -1,4 +1,31 @@
-=== MOCKEXAM SESSION HANDOVER — Word Vault Listening & Story Challenge ===
+=== MOCKEXAM SESSION HANDOVER — Subject Notes & Recall ===
+Date: 2026-10-30
+Repository: https://github.com/intellygentle/MockExam.git
+Branch: main
+
+Subject Notes & Recall is implemented for MockExam at /recall, with an Arena
+stack, progress-dashboard panel and owner editor at the secret admin path's
+/recall page. This uses MockExam's nickname + school identities and subjects.
+
+Setup required before use:
+- Apply src/supabase/migration-v6-subject-recall.sql to MockExam's Supabase project.
+- Configure server-only SUPABASE_SERVICE_ROLE_KEY for owner note editing/reports.
+- Keep the existing ADMIN_SECRET_KEY / SECRET_ADMIN_PATH owner-login settings.
+The migration has NOT been applied to the live database in this session.
+
+The SQL engine checks exact wording (ignores case/extra whitespace), saves review
+dates from 2 minutes through monthly, separates retries from delayed retention,
+and counts a retained section after three successful delayed checks with reviews
+up to date. See SUBJECT_RECALL.md for the complete rules and setup.
+
+Verification: 19 PGlite tests pass (including rerunnable migration and permissions);
+TypeScript passes; next build compiles but hits the existing Node 20 PDF-reader
+prerender error (Iterator is not defined at /reading/to-kill-a-mockingbird).
+
+Credential rules below continue to apply. The service-role key must remain
+server-only and must never be committed or printed.
+
+=== EARLIER HANDOVER — Word Vault Listening & Story Challenge ===
 Date: 2026-10-02
 Branch: main
 STATUS: Two new Spelling Bee cards CODE-COMPLETE and LIVE. Both DB scripts have

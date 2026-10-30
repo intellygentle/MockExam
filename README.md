@@ -1,5 +1,14 @@
 NPF MOC-EXAM NGN
 
+## Subject Notes & Recall
+
+The Arena includes a subject-notes stack with exact-answer typing practice,
+scheduled reviews and per-lesson retention tracking. Manage lessons through
+**Admin → Notes & Recall** and practise at `/recall`.
+
+See [SUBJECT_RECALL.md](SUBJECT_RECALL.md) for the database migration, server
+configuration and learning rules. Run `npm run test:recall` to check the engine.
+
 ## Getting Started
 
 First, run the development server:

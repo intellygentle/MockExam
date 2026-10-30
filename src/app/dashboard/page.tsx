@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getSupabase } from "@/lib/supabaseClient";
 import BadgeChip from "@/components/BadgeChip";
+import RecallStackCard from "@/components/RecallStackCard";
 import { motion } from "framer-motion";
 import {
   BarChart3, BookOpen, User, School,
@@ -209,6 +210,8 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
+      {studentName ? <RecallStackCard studentName={studentName} schoolName={schoolName} /> : null}
+
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <Loader2 size={32} className="text-policeGold animate-spin" />
@@ -220,7 +223,7 @@ export default function DashboardPage() {
           className="card text-center py-16 space-y-6">
           <Target size={64} className="text-white/20 mx-auto" />
           <div>
-            <h2 className="text-2xl font-heading font-bold text-white mb-2">No Activity Yet</h2>
+            <h2 className="text-2xl font-heading font-bold text-white mb-2">No Exam Practice Yet</h2>
             <p className="text-white/60 max-w-md mx-auto">
               Complete your first practice session to see your stats, badges, and progress here!
             </p>
