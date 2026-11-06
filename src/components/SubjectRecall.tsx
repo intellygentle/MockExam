@@ -9,6 +9,13 @@ import { recallAccuracy, recallDate, recallKinds, recallRequest,
 const button = "inline-flex items-center justify-center gap-2 rounded-xl bg-policeGold px-4 py-3 text-sm font-bold text-policeBlue disabled:opacity-40 disabled:cursor-not-allowed";
 const secondary = "inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed";
 const field = "w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white outline-none focus:border-policeGold";
+const noteSections = [
+  { kind: "definition", title: "Definition" },
+  { kind: "terminology", title: "Terminology" },
+  { kind: "importance", title: "Importance" },
+  { kind: "features", title: "Features" },
+  { kind: "other", title: "Other notes" },
+] as const;
 
 function Stats({ stats }: { stats: RecallStats }) {
   return <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -27,6 +34,16 @@ function firstDifference(expected: string, actual: string) {
   const typed = actual.trim().split(/\s+/);
   const index = words.findIndex((word, i) => word.toLowerCase() !== typed[i]?.toLowerCase());
   return index < 0 ? "Remove the extra words after the model answer." : `Check word ${index + 1}: the notes say “${words[index]}”.`;
+}
+
+function groupCards(cards: RecallCard[]) {
+  const groups: { key: string; cards: RecallCard[] }[] = [];
+  for (const card of cards) {
+    const key = card.section_id ?? card.id;
+    const group = groups.find((item) => item.key === key);
+    if (group) group.cards.push(card); else groups.push({ key, cards: [card] });
+  }
+  return groups;
 }
 
 export default function SubjectRecall({ startWithReview = false }: { startWithReview?: boolean }) {
@@ -176,21 +193,34 @@ export default function SubjectRecall({ startWithReview = false }: { startWithRe
       </> : view === "notes" && activeLesson ? <>
         <h2 className="text-2xl font-bold">{activeLesson.title}</h2><Stats stats={activeLesson} />
         {!notes ? <div className="card space-y-4">
-          <p>Read each section, then hide the notes and type its answer from memory. The first check is ready as soon as you are.</p>
+          <p>Read each topic, then hide the notes and type the answer to each entry from memory. The first check is ready as soon as you are.</p>
           <div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={() => void run(() => recallRequest<{ cards: RecallCard[]; due_at: string }>("/api/recall", {
             action: "read", studentName, schoolName, lessonId: activeLesson.id,
           }), setNotes)}><BookOpen size={16} />{busy ? "Opening…" : "Read lesson notes"}</button>
             {activeLesson.studied_cards ? <button className={secondary} disabled={busy} onClick={() => next(activeLesson.id)}>Review from memory</button> : null}</div>
           {activeLesson.studied_cards ? <p className="text-xs text-white/50">Rereading starts a fresh short practice cycle. Review first to check what you retained.</p> : null}
         </div> : <>
-          <p className="rounded-xl bg-sky-400/10 p-4 text-sm">Learn the exact answer in each section. Capitalisation and extra spaces are ignored; words, spelling, order and punctuation must match.</p>
+          <p className="rounded-xl bg-sky-400/10 p-4 text-sm">Learn the exact answer for each entry. Capitalisation and extra spaces are ignored; words, spelling, order and punctuation must match.</p>
           {activeLesson.introduction ? <div className="card whitespace-pre-wrap leading-7">{activeLesson.introduction}</div> : null}
-          {notes.cards.map((item, index) => <section key={item.id} className="card space-y-3">
-            <p className="text-xs uppercase tracking-widest text-sky-300">{recallKinds[item.kind]}</p><h3 className="text-xl font-bold">{index + 1}. {item.heading}</h3>
-            <p className="text-white/60">{item.prompt}</p><div className="rounded-xl bg-policeGold/10 border border-policeGold/20 p-4">
-              <p className="mb-2 text-xs uppercase tracking-wide text-policeGold">Answer to remember</p><p className="whitespace-pre-wrap leading-7">{item.answer}</p></div>
-            {item.explanation ? <p className="whitespace-pre-wrap leading-7 text-white/60">{item.explanation}</p> : null}
-          </section>)}
+          {groupCards(notes.cards).map((group, index) => {
+            const section = group.cards[0];
+            return <section key={group.key} className="card space-y-4">
+              <h3 className="text-xl font-bold">{index + 1}. {section.heading}</h3>
+              {noteSections.map(({ kind, title }) => {
+                const items = group.cards.filter((item) => item.kind === kind);
+                if (!items.length) return null;
+                const showPrompt = kind === "terminology" || kind === "features" || kind === "other";
+                return <div key={kind} className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-widest text-sky-300">{title}</h4>
+                  {items.map((item) => <div key={item.id} className="space-y-2 rounded-xl border border-white/10 p-4">
+                    {showPrompt ? <p className="font-bold whitespace-pre-wrap">{item.prompt}</p> : null}
+                    <p className="whitespace-pre-wrap leading-7">{item.answer}</p>
+                    {item.explanation ? <p className="text-sm whitespace-pre-wrap leading-6 text-white/60">{item.explanation}</p> : null}
+                  </div>)}
+                </div>;
+              })}
+            </section>;
+          })}
           <div className="card flex flex-wrap items-center justify-between gap-3"><p className="text-sm">Your first check is ready now.</p>
             <button className={button} disabled={busy} onClick={() => next(activeLesson.id)}><BrainCircuit size={16} />Hide notes &amp; practise</button></div>
         </>}
@@ -205,7 +235,8 @@ export default function SubjectRecall({ startWithReview = false }: { startWithRe
           <div className="flex flex-wrap gap-2"><button className={button} disabled={busy || seconds > 0} onClick={() => next(reviewLesson)}>Check due questions</button>
             <button className={secondary} onClick={back}>Browse notes</button>{reviewLesson ? <button className={secondary} onClick={() => next(null)} disabled={busy}>Review all subjects</button> : null}</div></div>
         : <section className="card space-y-5">
-          <p className="text-xs text-sky-300">{card.subject_name} · {card.lesson_title} · {retrying ? "Practice retry" : card.delayed ? "Delayed recall" : "Learning check"}</p>
+          <p className="text-xs text-sky-300">{card.subject_name} · {card.lesson_title} · {card.heading}</p>
+          <p className="text-xs text-white/50">{recallKinds[card.kind]} · {retrying ? "Practice retry" : card.delayed ? "Delayed recall" : "Learning check"}</p>
           <h2 className="text-xl font-bold whitespace-pre-wrap">{card.prompt}</h2>
           {!result ? <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); check(false); }}>
             <label className="block space-y-2">Type the answer from your notes<textarea ref={input} className={field} rows={6} maxLength={2000} value={answer} onChange={(event) => setAnswer(event.target.value)}
@@ -228,7 +259,7 @@ export default function SubjectRecall({ startWithReview = false }: { startWithRe
           </div>}
           {error ? <button className={secondary} disabled={busy} onClick={() => next(reviewLesson, card.id)}>Load the next review</button> : null}
         </section>}
-        <p className="text-center text-xs text-white/50">10 minutes → 1 day → 3 days → 7 days → 14 days → monthly. A miss returns the section after two minutes.</p>
+        <p className="text-center text-xs text-white/50">10 minutes → 1 day → 3 days → 7 days → 14 days → monthly. A miss returns that entry after two minutes.</p>
       </> : null}
       <p className="text-xs leading-6 text-white/50">Retention uses first answers after at least 24 hours without seeing the model. Three successful delayed checks, with reviews up to date, mark a section as retained. Immediate retries do not raise retention scores.</p>
     </>}

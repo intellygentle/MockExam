@@ -26,9 +26,13 @@ a new account-authentication system.
 
 - Open the admin **Notes & Recall** tab and create a lesson for a subject.
 - Add a title and optional introduction.
-- Add up to 50 short sections, each with a type, heading, question and exact answer.
-- Types cover definitions, terminology, importance, features and other notes.
-- Use the explanation field for examples or supporting context.
+- Add up to 50 entries. Each section is a topic with its own heading, definition,
+  terminology, importance and any other subtopics; students study the whole topic
+  together.
+- Use **Add term** for each key term, and **Add subtopic** for features or any other
+  notes the topic needs. A topic can mix all of them freely.
+- Use the optional example/note field for supporting context. Entries left without an
+  answer are not saved.
 - Select **Publish for students** and save. Drafts remain hidden from students.
 
 Each answer is limited to 1,000 characters. Split long lists into separate

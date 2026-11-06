@@ -65,6 +65,28 @@ test("published notes appear in the library without model answers; reading start
   assert.ok(!JSON.stringify(queue).includes(answer));
 });
 
+test("a topic holds definition, terminology, importance and other subtopics studied together", async () => {
+  const sectionId = randomUUID();
+  const cards = [
+    section({ section_id: sectionId }),
+    section({ id: randomUUID(), section_id: sectionId, kind: "terminology", prompt: "Law", answer: "A rule enforced by the state." }),
+    section({ id: randomUUID(), section_id: sectionId, kind: "importance", prompt: "State one importance.", answer: "It protects rights." }),
+    section({ id: randomUUID(), section_id: sectionId, kind: "features", prompt: "Features of the rule of law", answer: "Equality before the law." }),
+    section({ id: randomUUID(), section_id: sectionId, kind: "other", prompt: "Example", answer: "A citizen can sue a minister." }),
+  ];
+  await save(cards);
+  const notes = await read();
+  assert.deepEqual(notes.cards.map((card) => card.section_id), cards.map(() => sectionId));
+  assert.deepEqual(notes.cards.map((card) => card.kind), ["definition", "terminology", "importance", "features", "other"]);
+  assert.equal((await library()).stats.due_cards, 5);
+  const first = (await next()).card;
+  assert.equal((await submit(first, notes.cards.find((card) => card.id === first.id).answer)).correct, true);
+  await makeDue();
+  const second = (await next(first.id)).card;
+  assert.equal((await submit(second, notes.cards.find((card) => card.id === second.id).answer)).correct, true);
+  assert.equal((await library()).stats.studied_cards, 5);
+});
+
 test("exact checking ignores capitalisation and whitespace", async () => {
   await read(); await makeDue();
   const result = await submit((await next()).card, `  ${answer.toUpperCase().replaceAll(" ", "\n\t\u00a0  ")}  `);
