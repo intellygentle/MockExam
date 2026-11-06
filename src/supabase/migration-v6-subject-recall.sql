@@ -42,6 +42,8 @@ create table if not exists public.recall_progress (
   primary key (student_name, school_name, card_id),
   check (cardinality(attempt_ids) = cardinality(attempt_results) and cardinality(attempt_ids) <= 5)
 );
+-- Existing installs keep their column default, so align it with instant first checks.
+alter table public.recall_progress alter column due_at set default now();
 create index if not exists recall_lessons_subject_idx on public.recall_lessons(subject_id);
 create index if not exists recall_cards_lesson_idx on public.recall_cards(lesson_id, position);
 create index if not exists recall_progress_due_idx on public.recall_progress(student_name, school_name, due_at);
