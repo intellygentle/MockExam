@@ -51,7 +51,7 @@ beforeEach(async () => {
 });
 after(() => db.close());
 
-test("published notes appear in the library without model answers; reading starts a two-minute check", async () => {
+test("published notes appear in the library without model answers; reading starts an immediate check", async () => {
   const initial = await library();
   assert.equal(initial.lessons[0].subject_name, "Civic Education");
   assert.equal(initial.stats.studied_cards, 0);
@@ -59,9 +59,7 @@ test("published notes appear in the library without model answers; reading start
   const notes = await read();
   assert.equal(notes.cards[0].answer, answer);
   const state = await progress();
-  assert.equal(new Date(state.due_at) - new Date(state.last_seen_at), 120000);
-  assert.equal((await next()).card, null);
-  await makeDue();
+  assert.ok(new Date(state.due_at) <= new Date(state.last_seen_at));
   const queue = await next();
   assert.equal(queue.card.prompt, section().prompt);
   assert.ok(!JSON.stringify(queue).includes(answer));
@@ -159,8 +157,6 @@ test("rereading invalidates outstanding questions and prevents fresh exposure co
   const old = (await next()).card;
   await read();
   await assert.rejects(() => submit(old), /changed/);
-  assert.equal((await next()).card, null);
-  await makeDue();
   assert.equal((await submit((await next()).card)).delayed, false);
 });
 

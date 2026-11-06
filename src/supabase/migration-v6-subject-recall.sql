@@ -24,7 +24,7 @@ create table if not exists public.recall_progress (
   school_name text not null default '' check (char_length(school_name) <= 120),
   card_id uuid not null references public.recall_cards(id) on delete cascade,
   step smallint not null default 0 check (step between 0 and 6),
-  due_at timestamptz not null default (now() + interval '2 minutes'),
+  due_at timestamptz not null default now(),
   last_seen_at timestamptz not null default now(),
   last_reviewed_at timestamptz,
   first_attempts integer not null default 0,
@@ -166,11 +166,11 @@ begin
   insert into public.recall_progress(student_name, school_name, card_id)
     select btrim(p_student), btrim(p_school), id from public.recall_cards where lesson_id = p_lesson_id order by id
   on conflict(student_name, school_name, card_id) do update set
-    step = 0, last_seen_at = now(), due_at = now() + interval '2 minutes',
+    step = 0, last_seen_at = now(), due_at = now(),
     needs_delayed_check = true, review_id = null, review_done = true, attempt_ids = '{}', attempt_results = '{}';
   select coalesce(jsonb_agg(to_jsonb(c) order by position, id), '[]'::jsonb) into v_cards
     from public.recall_cards c where lesson_id = p_lesson_id;
-  return jsonb_build_object('cards', v_cards, 'due_at', now() + interval '2 minutes');
+  return jsonb_build_object('cards', v_cards, 'due_at', now());
 end;
 $$;
 

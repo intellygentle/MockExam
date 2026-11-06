@@ -41,7 +41,7 @@ section's student progress. Capitalisation and whitespace changes preserve it.
 1. Review due questions first, aiming for a manageable session of up to 10 cards.
 2. Open a short lesson and read its notes.
 3. Hide the notes and type the model answer from memory; the first check is
-   available two minutes after opening the notes.
+   available immediately after opening the notes.
 4. Compare incorrect answers against the model, hide it, and retry or practise
    another card. Five unsuccessful attempts cause a short break.
 5. Return for scheduled checks; mix questions from all subjects or one lesson.
@@ -50,9 +50,9 @@ Matching ignores capitalisation, repeated spaces, line breaks and non-breaking
 spaces. Words, spelling, order and punctuation must match. No keyword or
 meaning-based partial credit is used.
 
-Review intervals are **2 minutes → 10 minutes → 1 day → 3 days → 7 days → 14 days
-→ 30 days**, with monthly reviews continuing. A missed answer or reveal returns
-the section to a two-minute learning cycle. The queue prioritises older due days,
+Review intervals are **10 minutes → 1 day → 3 days → 7 days → 14 days → 30 days**,
+with monthly reviews continuing. A missed answer or reveal returns the section to
+a two-minute learning cycle. The queue prioritises older due days,
 randomises within that priority and avoids the previous section when possible.
 
 Rereading records a fresh exposure and restarts the short cycle. Use **Review**

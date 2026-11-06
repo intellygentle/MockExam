@@ -176,7 +176,7 @@ export default function SubjectRecall({ startWithReview = false }: { startWithRe
       </> : view === "notes" && activeLesson ? <>
         <h2 className="text-2xl font-bold">{activeLesson.title}</h2><Stats stats={activeLesson} />
         {!notes ? <div className="card space-y-4">
-          <p>Read each section, then hide the notes and type its answer from memory. The first check is available two minutes after opening the notes.</p>
+          <p>Read each section, then hide the notes and type its answer from memory. The first check is ready as soon as you are.</p>
           <div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={() => void run(() => recallRequest<{ cards: RecallCard[]; due_at: string }>("/api/recall", {
             action: "read", studentName, schoolName, lessonId: activeLesson.id,
           }), setNotes)}><BookOpen size={16} />{busy ? "Opening…" : "Read lesson notes"}</button>
@@ -191,7 +191,7 @@ export default function SubjectRecall({ startWithReview = false }: { startWithRe
               <p className="mb-2 text-xs uppercase tracking-wide text-policeGold">Answer to remember</p><p className="whitespace-pre-wrap leading-7">{item.answer}</p></div>
             {item.explanation ? <p className="whitespace-pre-wrap leading-7 text-white/60">{item.explanation}</p> : null}
           </section>)}
-          <div className="card flex flex-wrap items-center justify-between gap-3"><p className="text-sm">First check: {recallDate(notes.due_at)}</p>
+          <div className="card flex flex-wrap items-center justify-between gap-3"><p className="text-sm">Your first check is ready now.</p>
             <button className={button} disabled={busy} onClick={() => next(activeLesson.id)}><BrainCircuit size={16} />Hide notes &amp; practise</button></div>
         </>}
       </> : view === "review" ? <>
@@ -228,7 +228,7 @@ export default function SubjectRecall({ startWithReview = false }: { startWithRe
           </div>}
           {error ? <button className={secondary} disabled={busy} onClick={() => next(reviewLesson, card.id)}>Load the next review</button> : null}
         </section>}
-        <p className="text-center text-xs text-white/50">2 minutes → 10 minutes → 1 day → 3 days → 7 days → 14 days → monthly. A miss restarts the short cycle.</p>
+        <p className="text-center text-xs text-white/50">10 minutes → 1 day → 3 days → 7 days → 14 days → monthly. A miss returns the section after two minutes.</p>
       </> : null}
       <p className="text-xs leading-6 text-white/50">Retention uses first answers after at least 24 hours without seeing the model. Three successful delayed checks, with reviews up to date, mark a section as retained. Immediate retries do not raise retention scores.</p>
     </>}
