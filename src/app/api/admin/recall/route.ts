@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       return json({ error: "Provide a subject, title and up to 50 short sections." }, 400);
     }
     for (const card of body.cards) {
-      if (!card || !recallId(card.id) || !Object.hasOwn(recallKinds, card.kind) ||
+      if (!card || !recallId(card.id) || (card.section_id != null && !recallId(card.section_id)) || !Object.hasOwn(recallKinds, card.kind) ||
         typeof card.heading !== "string" || card.heading.trim().length < 2 || card.heading.length > 120 ||
         typeof card.prompt !== "string" || card.prompt.trim().length < 2 || card.prompt.length > 400 ||
         typeof card.answer !== "string" || !card.answer.trim() || card.answer.length > 1000 ||

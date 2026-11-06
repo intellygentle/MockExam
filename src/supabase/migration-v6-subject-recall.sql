@@ -12,6 +12,7 @@ create table if not exists public.recall_lessons (
 create table if not exists public.recall_cards (
   id uuid primary key default gen_random_uuid(),
   lesson_id uuid not null references public.recall_lessons(id) on delete cascade,
+  section_id uuid not null default gen_random_uuid(),
   heading text not null check (char_length(btrim(heading)) between 2 and 120),
   kind text not null check (kind in ('definition', 'terminology', 'importance', 'features', 'other')),
   prompt text not null check (char_length(btrim(prompt)) between 2 and 400),
@@ -44,6 +45,14 @@ create table if not exists public.recall_progress (
 );
 -- Existing installs keep their column default, so align it with instant first checks.
 alter table public.recall_progress alter column due_at set default now();
+-- Existing installs need the section grouping and the narrowed kind list applied in place.
+alter table public.recall_cards add column if not exists section_id uuid;
+update public.recall_cards set section_id = id where section_id is null;
+alter table public.recall_cards alter column section_id set default gen_random_uuid();
+alter table public.recall_cards alter column section_id set not null;
+alter table public.recall_cards drop constraint if exists recall_cards_kind_check;
+alter table public.recall_cards add constraint recall_cards_kind_check check (kind in ('definition', 'terminology', 'importance', 'features', 'other'));
+create index if not exists recall_cards_section_idx on public.recall_cards(section_id);
 create index if not exists recall_lessons_subject_idx on public.recall_lessons(subject_id);
 create index if not exists recall_cards_lesson_idx on public.recall_cards(lesson_id, position);
 create index if not exists recall_progress_due_idx on public.recall_progress(student_name, school_name, due_at);
@@ -102,10 +111,12 @@ begin
     if exists(select 1 from public.recall_cards where id = (v_card->>'id')::uuid and lesson_id <> v_id) then
       raise exception 'This section belongs to another lesson.';
     end if;
-    insert into public.recall_cards(id, lesson_id, heading, kind, prompt, answer, explanation, position)
-      values((v_card->>'id')::uuid, v_id, v_card->>'heading', v_card->>'kind',
-        v_card->>'prompt', v_card->>'answer', coalesce(v_card->>'explanation', ''), v_position)
+    insert into public.recall_cards(id, lesson_id, section_id, heading, kind, prompt, answer, explanation, position)
+      values((v_card->>'id')::uuid, v_id, coalesce((v_card->>'section_id')::uuid, (v_card->>'id')::uuid),
+        v_card->>'heading', v_card->>'kind', v_card->>'prompt', v_card->>'answer',
+        coalesce(v_card->>'explanation', ''), v_position)
       on conflict(id) do update set heading = excluded.heading, kind = excluded.kind,
+        section_id = coalesce((v_card->>'section_id')::uuid, public.recall_cards.section_id),
         prompt = excluded.prompt, answer = excluded.answer, explanation = excluded.explanation, position = excluded.position;
     v_ids := array_append(v_ids, (v_card->>'id')::uuid);
     v_position := v_position + 1;
@@ -191,7 +202,8 @@ begin
     join public.recall_cards c on c.id = p.card_id join public.recall_lessons l on l.id = c.lesson_id
     where p.student_name = btrim(p_student) and p.school_name = btrim(p_school) and p.due_at <= now()
       and l.is_published and (p_lesson_id is null or l.id = p_lesson_id)
-    order by case when p.card_id = p_previous_card_id then 1 else 0 end, date_trunc('day', p.due_at), random()
+    order by case when p.card_id <> p_previous_card_id and c.section_id = (select section_id from public.recall_cards where id = p_previous_card_id) then 0 else 1 end,
+      case when p.card_id = p_previous_card_id then 1 else 0 end, date_trunc('day', p.due_at), random()
     limit 1 for update of p skip locked;
   if not found then
     select min(p.due_at) into v_due from public.recall_progress p

@@ -4,7 +4,7 @@ export const recallKinds = {
 } as const;
 
 export type RecallCard = {
-  id: string; heading: string; kind: keyof typeof recallKinds;
+  id: string; section_id?: string; heading: string; kind: keyof typeof recallKinds;
   prompt: string; answer: string; explanation: string; position?: number;
 };
 export type RecallStats = {
