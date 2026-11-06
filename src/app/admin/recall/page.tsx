@@ -5,9 +5,10 @@ import { PlusCircle, Save, Trash2 } from "lucide-react";
 import { recallAccuracy, recallDate, recallRequest, type RecallCard, type RecallReport } from "@/lib/subject-recall";
 
 type Lesson = { id: string; subject_id: number; title: string; introduction: string; is_published: boolean; revision: number };
+type Subject = { id: number; name: string; level: string };
 type Draft = Omit<Lesson, "id"> & { id: string | null; cards: RecallCard[] };
-type Library = { lessons: Lesson[]; count: number; subjects: { id: number; name: string; level: string }[] };
-type Detail = { lesson: Lesson; cards: RecallCard[]; report: RecallReport[] };
+type Library = { lessons: Lesson[]; count: number; subjects: Subject[] };
+type Detail = { lesson: Lesson & { subject: Subject }; cards: RecallCard[]; report: RecallReport[] };
 const field = "w-full rounded-xl border border-white/20 bg-black/40 p-3 text-white outline-none focus:border-policeGold";
 const button = "inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-bold disabled:opacity-40";
 const noteGroups = [
@@ -29,9 +30,8 @@ export default function AdminRecallPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-  const [addingSubject, setAddingSubject] = useState(false);
   const [subjectName, setSubjectName] = useState("");
-  const [subjectLevel, setSubjectLevel] = useState<"jss3" | "ss3">("jss3");
+  const [subjectLevel, setSubjectLevel] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -45,7 +45,7 @@ export default function AdminRecallPage() {
     try {
       const data = await recallRequest<Detail>(`/api/admin/recall?lesson=${id}`);
       setDraft({ ...data.lesson, cards: data.cards }); setReport(data.report); setReportPage(1);
-      setAddingSubject(false); setSubjectName("");
+      setSubjectName(data.lesson.subject.name); setSubjectLevel(data.lesson.subject.level);
     } catch (err) { setError((err as Error).message); }
     finally { setBusy(false); }
   }
@@ -87,31 +87,22 @@ export default function AdminRecallPage() {
     setSaved(false);
     setDraft((previous) => previous ? { ...previous, cards: previous.cards.filter((card) => (card.section_id ?? card.id) !== key) } : previous);
   }
-  async function addSubject() {
-    if (!draft || busy) return;
-    if (subjectName.trim().length < 2) { setError("Enter a subject name with at least two characters."); return; }
-    setBusy(true); setError(""); setSaved(false);
-    try {
-      const { subject } = await recallRequest<{ subject: Library["subjects"][number] }>("/api/admin/recall/subjects", { name: subjectName, level: subjectLevel });
-      setLibrary((previous) => previous ? { ...previous, subjects: [...previous.subjects.filter((item) => item.id !== subject.id), subject]
-        .sort((a, b) => a.name.localeCompare(b.name) || a.level.localeCompare(b.level) || a.id - b.id) } : previous);
-      setDraft((previous) => previous ? { ...previous, subject_id: subject.id } : previous);
-      setAddingSubject(false); setSubjectName(""); setRefresh((value) => value + 1);
-    } catch (err) { setError((err as Error).message); }
-    finally { setBusy(false); }
-  }
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!draft || busy || addingSubject || !draft.subject_id) return;
+    if (!draft || busy || subjectName.trim().length < 2 || !subjectLevel.trim()) return;
     setBusy(true); setError(""); setSaved(false);
     try {
       const cards = draft.cards.filter((card) => card.answer.trim()).map((card) => ({
         ...card, heading: card.heading.trim(), prompt: card.prompt.trim(),
         answer: card.answer.trim(), explanation: card.explanation.trim(),
       }));
-      const result = await recallRequest<{ id: string }>("/api/admin/recall", { ...draft, cards });
+      const { subject } = await recallRequest<{ subject: Subject }>("/api/admin/recall/subjects", {
+        id: draft.subject_id || null, name: subjectName, level: subjectLevel,
+      });
+      const result = await recallRequest<{ id: string }>("/api/admin/recall", { ...draft, subject_id: subject.id, cards });
       const data = await recallRequest<Detail>(`/api/admin/recall?lesson=${result.id}`);
       setDraft({ ...data.lesson, cards: data.cards }); setReport(data.report); setReportPage(1);
+      setSubjectName(data.lesson.subject.name); setSubjectLevel(data.lesson.subject.level);
       setSaved(true); setRefresh((value) => value + 1);
     } catch (err) { setError((err as Error).message); }
     finally { setBusy(false); }
@@ -140,11 +131,10 @@ export default function AdminRecallPage() {
     {library ? <section className="card space-y-4">
       <div className="flex flex-wrap justify-between gap-3"><h2 className="text-xl font-bold">Lessons</h2>
         <button className={button} disabled={busy} onClick={() => {
-          setDraft({ id: null, subject_id: library.subjects[0]?.id ?? 0, title: "", introduction: "", is_published: false, revision: 0, cards: [] });
+          setDraft({ id: null, subject_id: 0, title: "", introduction: "", is_published: false, revision: 0, cards: [] });
           setReport([]); setReportPage(1); setSaved(false); setError("");
-          setAddingSubject(!library.subjects.length); setSubjectName(""); setSubjectLevel(library.subjects[0]?.level === "ss3" ? "ss3" : "jss3");
+          setSubjectName(""); setSubjectLevel("");
         }}><PlusCircle size={16} />New lesson</button></div>
-      {!library.subjects.length ? <p className="text-sm text-white/60">Create a lesson to add your first subject.</p> : null}
       {!library.lessons.length ? <p className="text-white/60">No lessons on this page. Create a lesson to start.</p> : null}
       <div className="grid gap-3 sm:grid-cols-2">{library.lessons.map((lesson) => <button key={lesson.id} disabled={busy} onClick={() => void open(lesson.id)} className="rounded-xl border border-white/10 p-4 text-left hover:border-policeGold/40">
         <p className="font-bold">{lesson.title}</p><p className="mt-1 text-xs text-white/50">{library.subjects.find((s) => s.id === lesson.subject_id)?.name} · {lesson.is_published ? "Published" : "Draft"}</p>
@@ -155,31 +145,13 @@ export default function AdminRecallPage() {
     {draft && library ? <form onSubmit={save} className="card space-y-5">
       <fieldset disabled={busy} className="space-y-5">
         <h2 className="text-xl font-bold">{draft.id ? "Edit lesson" : "Create lesson"}</h2>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label className="block min-w-0 flex-1 space-y-2">Subject<select aria-label="Subject" className={field} required value={draft.subject_id || ""} onChange={(event) => { setDraft({ ...draft, subject_id: Number(event.target.value) }); setSaved(false); }}>
-            <option value="" disabled>Choose a subject</option>
-            {library.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name} · {subject.level.toUpperCase()}</option>)}
-          </select></label>
-          <button type="button" className={`${button} self-start sm:self-auto`} disabled={addingSubject} onClick={() => {
-            setAddingSubject(true); setSubjectName(""); setError("");
-            setSubjectLevel(library.subjects.find((subject) => subject.id === draft.subject_id)?.level === "ss3" ? "ss3" : "jss3");
-          }}><PlusCircle size={16} />Add subject</button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block space-y-2">Subject<input className={field} required minLength={2} maxLength={120} value={subjectName}
+            onChange={(event) => { setSubjectName(event.target.value); setSaved(false); }} placeholder="Enter a subject name" /></label>
+          <label className="block space-y-2">Level<input className={field} required maxLength={120} value={subjectLevel}
+            onChange={(event) => { setSubjectLevel(event.target.value); setSaved(false); }} placeholder="Enter a level" /></label>
         </div>
-        {addingSubject ? <fieldset className="space-y-3 rounded-xl border border-policeGold/30 p-4">
-          <legend className="px-2 font-bold">New subject</legend>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block space-y-2">Subject name<input className={field} autoFocus minLength={2} maxLength={120} value={subjectName}
-              onChange={(event) => setSubjectName(event.target.value)} placeholder="e.g. Geography"
-              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addSubject(); } }} /></label>
-            <label className="block space-y-2">Level<select aria-label="Level" className={field} value={subjectLevel} onChange={(event) => setSubjectLevel(event.target.value as "jss3" | "ss3")}>
-              <option value="jss3">JSS3</option><option value="ss3">SS3</option>
-            </select></label>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button type="button" className={`${button} bg-policeGold text-policeBlue`} disabled={busy || subjectName.trim().length < 2} onClick={() => void addSubject()}>{busy ? "Adding…" : "Add and select"}</button>
-            <button type="button" className={button} onClick={() => { setAddingSubject(false); setSubjectName(""); setError(""); }}>Cancel</button>
-          </div>
-        </fieldset> : null}
+        <p className="text-sm text-white/60">Enter any subject and level. Matching subjects are reused when you save.</p>
         <label className="block space-y-2">Lesson title<input className={field} required minLength={2} maxLength={120} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="e.g. Rule of law" /></label>
         <label className="block space-y-2">Introduction (optional)<textarea className={field} rows={4} maxLength={10000} value={draft.introduction} onChange={(event) => setDraft({ ...draft, introduction: event.target.value })} /></label>
         <p className="text-sm text-white/60">Use short, precise answers. Students reproduce the same words, spelling, order and punctuation; capitalisation and extra spaces are ignored. Entries left without an answer are not saved. Saving changed questions or answer wording restarts the affected topic’s progress.</p>
@@ -237,7 +209,7 @@ export default function AdminRecallPage() {
           ] });
         }}><PlusCircle size={16} />Add topic ({draft.cards.length}/50 entries)</button>
         <label className="flex items-center gap-3"><input type="checkbox" checked={draft.is_published} onChange={(event) => setDraft({ ...draft, is_published: event.target.checked })} />Publish for students</label>
-        <div className="flex flex-wrap gap-3 items-center"><button className={`${button} bg-policeGold text-policeBlue`} disabled={busy || addingSubject || !draft.subject_id || (draft.is_published && !draft.cards.length)}><Save size={16} />{busy && !addingSubject ? "Saving…" : "Save lesson"}</button>
+        <div className="flex flex-wrap gap-3 items-center"><button className={`${button} bg-policeGold text-policeBlue`} disabled={busy || subjectName.trim().length < 2 || !subjectLevel.trim() || (draft.is_published && !draft.cards.length)}><Save size={16} />{busy ? "Saving…" : "Save lesson"}</button>
           {saved ? <p role="status" className="text-green-300 text-sm">Lesson saved.</p> : null}</div>
       </fieldset>
     </form> : null}

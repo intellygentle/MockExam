@@ -8,6 +8,7 @@ published notes by the existing subjects and levels.
 
 1. Run `src/supabase/migration-v6-subject-recall.sql` in the MockExam Supabase
    project's SQL Editor. The migration is transactional and safe to rerun.
+   Rerun it on existing installations to enable custom subject levels.
 2. Add `SUPABASE_SERVICE_ROLE_KEY` to the server environment for note management.
    Keep it server-only; it must never use a `NEXT_PUBLIC_` prefix or be committed.
 3. Use the existing owner login (`ADMIN_SECRET_KEY` and `SECRET_ADMIN_PATH`) to
@@ -24,7 +25,8 @@ a new account-authentication system.
 
 ## Publishing a lesson
 
-- Open the admin **Notes & Recall** tab and create a lesson for a subject.
+- Open the admin **Notes & Recall** tab and create a lesson. Type any subject name
+  and level; matching subjects are reused and new combinations are created on save.
 - Add a title and optional introduction.
 - Add up to 50 entries. Each section is a topic with its own heading, definition,
   terminology, importance and any other subtopics; students study the whole topic

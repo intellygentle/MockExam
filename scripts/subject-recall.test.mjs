@@ -32,21 +32,21 @@ async function makeDue(hours = 0) {
   await db.query("update public.recall_progress set due_at = now() - interval '1 minute', last_seen_at = now() - $1 * interval '1 hour'", [hours]);
   await pupil();
 }
-async function save(cards, revision = 1, published = true, id = lessonId) {
+async function save(cards, revision = 1, published = true, id = lessonId, subjectId = 1) {
   await db.exec("set role service_role");
-  try { return await call("save_recall_lesson", [id, 1, "Rule of law", "Civic Education notes", published, revision, JSON.stringify(cards)]); }
+  try { return await call("save_recall_lesson", [id, subjectId, "Rule of law", "Civic Education notes", published, revision, JSON.stringify(cards)]); }
   finally { await pupil(); }
 }
 
 before(async () => {
-  await db.exec("create role anon; create role authenticated; create role service_role bypassrls; create table public.subjects(id bigint primary key, name text, level text); insert into public.subjects values(1, 'Civic Education', 'ss3');");
+  await db.exec("create role anon; create role authenticated; create role service_role bypassrls; create table public.subjects(id bigint primary key, name text, level text not null check (level in ('jss3', 'ss3'))); insert into public.subjects values(1, 'Civic Education', 'ss3');");
   const migration = await readFile(new URL("../src/supabase/migration-v6-subject-recall.sql", import.meta.url), "utf8");
   await db.exec(migration);
   await db.exec(migration);
 });
 beforeEach(async () => {
   await owner();
-  await db.exec("truncate public.recall_lessons cascade");
+  await db.exec("truncate public.recall_lessons cascade; delete from public.subjects where id <> 1");
   lessonId = await save([section()], 0, true, null);
 });
 after(() => db.close());
@@ -63,6 +63,28 @@ test("published notes appear in the library without model answers; reading start
   const queue = await next();
   assert.equal(queue.card.prompt, section().prompt);
   assert.ok(!JSON.stringify(queue).includes(answer));
+});
+
+test("custom subjects and levels work throughout recall and survive rerunning the migration", async () => {
+  await owner();
+  await db.query("insert into public.subjects values(2, $1, $2)", ["Robotics & Design", "foundation year"]);
+  await save([section()], 1, true, lessonId, 2);
+  await read();
+  await owner();
+  await db.exec(await readFile(new URL("../src/supabase/migration-v6-subject-recall.sql", import.meta.url), "utf8"));
+  await pupil();
+  const notes = await library();
+  assert.deepEqual(notes.subjects, [{ id: 2, name: "Robotics & Design", level: "foundation year" }]);
+  assert.equal(notes.lessons[0].level, "foundation year");
+  assert.equal(notes.stats.studied_cards, 1);
+  assert.equal((await next()).card.subject_name, "Robotics & Design");
+});
+
+test("custom levels reject blank and overlong values", async () => {
+  await owner();
+  for (const level of ["", "   ", "x".repeat(121)]) {
+    await assert.rejects(() => db.query("insert into public.subjects values(2, 'Robotics', $1)", [level]), /subjects_level_check/);
+  }
 });
 
 test("a topic holds definition, terminology, importance and other subtopics studied together", async () => {

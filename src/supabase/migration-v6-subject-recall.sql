@@ -1,5 +1,8 @@
 begin;
 
+alter table public.subjects drop constraint if exists subjects_level_check;
+alter table public.subjects add constraint subjects_level_check check (char_length(btrim(level)) between 1 and 120);
+
 create table if not exists public.recall_lessons (
   id uuid primary key default gen_random_uuid(),
   subject_id bigint not null references public.subjects(id),

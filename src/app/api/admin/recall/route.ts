@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const db = recallClient(true);
     if (id) {
       const [lesson, cards, report] = await Promise.all([
-        db.from("recall_lessons").select("*").eq("id", id).maybeSingle(),
+        db.from("recall_lessons").select("*, subject:subjects(id, name, level)").eq("id", id).maybeSingle(),
         db.from("recall_cards").select("*").eq("lesson_id", id).order("position").limit(50),
         db.rpc("recall_lesson_report", { p_lesson_id: id, p_offset: (page - 1) * 50 }),
       ]);
