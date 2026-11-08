@@ -210,7 +210,7 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      {studentName ? <RecallStackCard studentName={studentName} schoolName={schoolName} /> : null}
+      {studentName ? <RecallStackCard studentName={studentName} schoolName={schoolName} detailed /> : null}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">

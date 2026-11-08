@@ -2,12 +2,19 @@ NPF MOC-EXAM NGN
 
 ## Subject Notes & Recall
 
-The Arena includes a subject-notes stack with exact-answer typing practice,
-scheduled reviews and per-lesson retention tracking. Manage lessons through
-**Admin → Notes & Recall** and practise at `/recall`.
+The Arena includes a subject-notes stack with an ordered content-block editor,
+focused reading, single-note recall, randomized master tests, and a connected
+retention dashboard. Manage and preview lessons through **Admin → Notes & Recall**
+and practise at `/recall`.
 
-See [SUBJECT_RECALL.md](SUBJECT_RECALL.md) for the database migration, server
-configuration and learning rules. Run `npm run test:recall` to check the engine.
+The content studio includes topic duplication, reversible removals, list reordering,
+and per-note teacher insights. Students can revisit one note, adjust reading text
+size, recover unfinished answers, and see precise list-item feedback.
+
+See [SUBJECT_RECALL.md](SUBJECT_RECALL.md) for the **v6 → v7 → v8** database setup,
+server configuration and learning rules. Apply the recall migrations in order;
+existing v7 installations need `src/supabase/migration-v8-recall-refinements.sql`.
+Run `npm run test:recall` to check the engine.
 
 ## Getting Started
 

@@ -54,3 +54,99 @@ button, a, input, textarea, select {
     border-radius: 1.25rem;
   }
 }
+
+@layer components {
+  .recall-panel {
+    @apply rounded-2xl border border-white/10 bg-slate-950/60 p-5 sm:rounded-3xl sm:p-7;
+  }
+  .recall-btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-white/30 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .recall-btn-primary {
+    @apply border-policeGold bg-policeGold text-slate-950 hover:border-yellow-300 hover:bg-yellow-300;
+  }
+  .recall-icon-btn {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:cursor-not-allowed disabled:opacity-25;
+  }
+  .recall-field {
+    @apply w-full rounded-xl border border-white/15 bg-slate-950/70 px-3.5 py-3 text-base text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-300/70 focus:ring-2 focus:ring-sky-300/10 disabled:opacity-50;
+  }
+  .recall-label {
+    @apply block space-y-2 text-sm font-medium text-slate-300;
+  }
+  .recall-eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.18em] text-sky-300;
+  }
+}
+
+.recall-workspace {
+  overflow-wrap: anywhere;
+  --recall-muted: #8c9cb2;
+}
+
+/* Keep small supporting copy readable on the workspace's layered dark surfaces. */
+.recall-workspace .text-slate-500,
+.recall-workspace .text-slate-600 {
+  color: var(--recall-muted);
+}
+
+.recall-workspace .recall-field::placeholder {
+  color: #8291a8;
+}
+
+.recall-workspace .recall-field[aria-invalid="true"] {
+  border-color: #fda4af;
+  box-shadow: 0 0 0 2px rgb(253 164 175 / 12%);
+}
+
+body.recall-focus {
+  background: linear-gradient(180deg, #0b1322 0%, #060b14 100%);
+}
+
+.recall-reading-standard {
+  --recall-reading-size: clamp(1rem, 0.94rem + 0.25vw, 1.125rem);
+}
+
+.recall-reading-large {
+  --recall-reading-size: clamp(1.125rem, 1.06rem + 0.25vw, 1.25rem);
+}
+
+.recall-reading-copy {
+  font-size: var(--recall-reading-size, 1.0625rem);
+  line-height: 1.9;
+}
+
+.recall-reading-copy p, .recall-reading-copy li {
+  line-height: inherit;
+}
+
+.recall-reading-context {
+  font-size: max(0.875rem, calc(var(--recall-reading-size, 1rem) - 0.125rem));
+  line-height: 1.9;
+}
+
+.recall-focus [data-site-header],
+.recall-focus [data-site-footer] {
+  display: none;
+}
+
+.recall-focus .recall-workspace {
+  padding-top: 1.5rem;
+}
+
+.recall-workspace textarea {
+  resize: vertical;
+}
+
+.recall-workspace select option {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recall-workspace *, .recall-workspace *::before, .recall-workspace *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

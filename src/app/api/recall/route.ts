@@ -33,8 +33,24 @@ export async function POST(request: Request) {
     const identity = { p_student: body.studentName.trim(), p_school: body.schoolName.trim() };
     const db = recallClient();
     let response;
-    if (body.action === "read" && recallId(body.lessonId)) {
-      response = await db.rpc("read_recall_lesson", { ...identity, p_lesson_id: body.lessonId });
+    if (body.action === "read" && recallId(body.lessonId) && (body.sectionId == null || recallId(body.sectionId))) {
+      response = body.sectionId
+        ? await db.rpc("read_recall_note", { ...identity, p_lesson_id: body.lessonId, p_section_id: body.sectionId })
+        : await db.rpc("read_recall_lesson", { ...identity, p_lesson_id: body.lessonId });
+    } else if (body.action === "start-session" && recallId(body.sessionId) &&
+      ["due", "note", "lesson", "master"].includes(body.mode) &&
+      (body.lessonId == null || recallId(body.lessonId)) && (body.sectionId == null || recallId(body.sectionId))) {
+      response = await db.rpc("start_recall_session", { ...identity, p_session_id: body.sessionId,
+        p_mode: body.mode, p_lesson_id: body.lessonId ?? null, p_section_id: body.sectionId ?? null });
+    } else if (body.action === "session" && recallId(body.sessionId)) {
+      response = await db.rpc("get_recall_session", { ...identity, p_session_id: body.sessionId });
+    } else if (body.action === "session-next" && recallId(body.sessionId) &&
+      Number.isSafeInteger(body.position) && body.position >= 0) {
+      response = await db.rpc("advance_recall_session", { ...identity, p_session_id: body.sessionId, p_position: body.position });
+    } else if (body.action === "session-answer" && recallId(body.sessionId) && recallId(body.reviewId) && recallId(body.requestId) &&
+      typeof body.answer === "string" && body.answer.length <= 2000 && typeof body.reveal === "boolean") {
+      response = await db.rpc("submit_recall_session", { ...identity, p_session_id: body.sessionId,
+        p_review_id: body.reviewId, p_request_id: body.requestId, p_answer: body.answer, p_reveal: body.reveal });
     } else if (body.action === "next" && (body.lessonId == null || recallId(body.lessonId)) &&
       (body.previousId == null || recallId(body.previousId))) {
       response = await db.rpc("begin_recall_review", { ...identity, p_lesson_id: body.lessonId ?? null, p_previous_card_id: body.previousId ?? null });
@@ -43,7 +59,9 @@ export async function POST(request: Request) {
       response = await db.rpc("submit_recall_review", { ...identity, p_review_id: body.reviewId,
         p_request_id: body.requestId, p_answer: body.answer, p_reveal: body.reveal });
     } else return json({ error: "Invalid recall request." }, 400);
-    if (response.error) return json({ error: response.error.message }, 400);
+    if (response.error) return json({ error: response.error.code === "PGRST202"
+      ? "Recall is being updated. Please ask your teacher to apply the recall migrations through v8."
+      : response.error.message }, response.error.code === "PGRST202" ? 503 : 400);
     return json(response.data);
   } catch (error) { return json({ error: recallError(error) }, 500); }
 }

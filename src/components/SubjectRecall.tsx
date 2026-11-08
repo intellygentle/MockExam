@@ -2,51 +2,27 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { BookOpen, BrainCircuit, RotateCcw, Eye, ArrowLeft, ArrowRight } from "lucide-react";
-import { recallAccuracy, recallDate, recallKinds, recallRequest,
-  type RecallCard, type RecallLesson, type RecallLibrary, type RecallQueue, type RecallResult, type RecallStats } from "@/lib/subject-recall";
+import { ArrowLeft, ArrowRight, BookOpen, BrainCircuit, ChevronRight, Clock3, Focus, Layers3, Loader2, Play, RotateCcw, Shuffle, UserRound } from "lucide-react";
+import RecallReading from "@/components/recall/RecallReading";
+import RecallPractice from "@/components/recall/RecallPractice";
+import { RecallReviewNotes, RecallStatsGrid } from "@/components/recall/RecallMetrics";
+import { recallAccuracy, recallDate, recallId, recallRequest, recallSessionKey,
+  type RecallCard, type RecallLesson, type RecallLibrary, type RecallPracticeConfig, type RecallResume, type RecallSessionMode } from "@/lib/subject-recall";
+import { notifyRecallProgress, useRecallRefresh } from "@/lib/useRecallRefresh";
 
-const button = "inline-flex items-center justify-center gap-2 rounded-xl bg-policeGold px-4 py-3 text-sm font-bold text-policeBlue disabled:opacity-40 disabled:cursor-not-allowed";
-const secondary = "inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed";
-const field = "w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white outline-none focus:border-policeGold";
-const noteSections = [
-  { kind: "definition", title: "Definition" },
-  { kind: "terminology", title: "Terminology" },
-  { kind: "importance", title: "Importance" },
-  { kind: "features", title: "Features" },
-  { kind: "other", title: "Other notes" },
-] as const;
-
-function Stats({ stats }: { stats: RecallStats }) {
-  return <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    {[
-      ["Due questions", String(stats.due_cards)], ["Practised today", String(stats.practised_today)],
-      ["Retained sections", `${stats.retained_cards}/${stats.total_cards}`],
-      ["Delayed recall", recallAccuracy(stats.delayed_correct, stats.delayed_attempts)],
-    ].map(([label, value]) => <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4">
-      <p className="text-xs text-white/50">{label}</p><p className="mt-1 text-lg font-bold text-policeGold">{value}</p>
-    </div>)}
-  </div>;
+function readResume(student: string, school: string): RecallResume | null {
+  try {
+    const saved: RecallResume | null = JSON.parse(localStorage.getItem(recallSessionKey(student, school)) || "null");
+    return saved && recallId(saved.id) && ["due", "note", "lesson", "master"].includes(saved.mode) &&
+      (saved.lessonId == null || recallId(saved.lessonId)) && (saved.sectionId == null || recallId(saved.sectionId)) &&
+      typeof saved.title === "string" && Number.isSafeInteger(saved.completed) && saved.completed >= 0 &&
+      Number.isSafeInteger(saved.total) && saved.total >= saved.completed ? saved : null;
+  } catch { return null; }
 }
 
-function firstDifference(expected: string, actual: string) {
-  const words = expected.trim().split(/\s+/);
-  const typed = actual.trim().split(/\s+/);
-  const index = words.findIndex((word, i) => word.toLowerCase() !== typed[i]?.toLowerCase());
-  return index < 0 ? "Remove the extra words after the model answer." : `Check word ${index + 1}: the notes say “${words[index]}”.`;
-}
-
-function groupCards(cards: RecallCard[]) {
-  const groups: { key: string; cards: RecallCard[] }[] = [];
-  for (const card of cards) {
-    const key = card.section_id ?? card.id;
-    const group = groups.find((item) => item.key === key);
-    if (group) group.cards.push(card); else groups.push({ key, cards: [card] });
-  }
-  return groups;
-}
-
-export default function SubjectRecall({ startWithReview = false }: { startWithReview?: boolean }) {
+export default function SubjectRecall({ initialMode, initialLessonId, initialSectionId, initialSessionId }: {
+  initialMode?: RecallSessionMode; initialLessonId?: string; initialSectionId?: string; initialSessionId?: string;
+}) {
   const [ready, setReady] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [schoolName, setSchoolName] = useState("");
@@ -55,213 +31,191 @@ export default function SubjectRecall({ startWithReview = false }: { startWithRe
   const [library, setLibrary] = useState<RecallLibrary | null>(null);
   const [page, setPage] = useState(1);
   const [subject, setSubject] = useState("");
-  const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"library" | "notes" | "review">(startWithReview ? "review" : "library");
+  const [view, setView] = useState<"library" | "lesson" | "reading" | "practice">("library");
   const [lesson, setLesson] = useState<RecallLesson | null>(null);
-  const [notes, setNotes] = useState<{ cards: RecallCard[]; due_at: string } | null>(null);
-  const [reviewLesson, setReviewLesson] = useState<string | null>(null);
-  const [queue, setQueue] = useState<RecallQueue | null>(null);
-  const [result, setResult] = useState<RecallResult | null>(null);
-  const [answer, setAnswer] = useState("");
-  const [submittedAnswer, setSubmittedAnswer] = useState("");
-  const [retrying, setRetrying] = useState(false);
-  const [reviews, setReviews] = useState<{ id: string; correct: boolean }[]>([]);
+  const [cards, setCards] = useState<RecallCard[] | null>(null);
+  const [readingSectionId, setReadingSectionId] = useState<string | undefined>();
+  const [practice, setPractice] = useState<RecallPracticeConfig | null>(null);
+  const [resume, setResume] = useState<RecallResume | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
-  const [clock, setClock] = useState(0);
-  const [offset, setOffset] = useState(0);
-  const input = useRef<HTMLTextAreaElement>(null);
-  const request = useRef<{ id: string; review: string; answer: string; reveal: boolean } | null>(null);
-  const card = queue?.card;
+  const [focus, setFocus] = useState(true);
+  const lock = useRef(false);
+  const entryHandled = useRef(false);
+  const activeLesson = lesson;
+  const [refresh, refreshLibrary] = useRecallRefresh(library?.stats.next_due_at, ready && !!studentName && view === "library");
 
   useEffect(() => {
-    setStudentName(localStorage.getItem("scholars-arena-name") || "");
-    setSchoolName(localStorage.getItem("scholars-arena-school") || "");
+    try {
+      setStudentName(localStorage.getItem("scholars-arena-name") || "");
+      setSchoolName(localStorage.getItem("scholars-arena-school") || "");
+      setFocus(localStorage.getItem("scholars-arena-recall-focus") !== "off");
+    } catch { /* A student can still enter an identity for this visit. */ }
     setReady(true);
   }, []);
+
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !studentName) return;
     let active = true;
-    setLoading(true);
+    setLoading(true); setLoadError("");
     const params = new URLSearchParams({ studentName, schoolName, page: String(page) });
     if (subject) params.set("subject", subject);
-    recallRequest<RecallLibrary>(`/api/recall?${params}`).then((data) => {
-      if (active) { setLibrary(data); setLoadError(""); }
-    }).catch((err: Error) => { if (active) setLoadError(err.message); })
+    recallRequest<RecallLibrary>(`/api/recall?${params}`).then((data) => { if (active) setLibrary(data); })
+      .catch((err: Error) => { if (active) setLoadError(err.message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [ready, studentName, schoolName, page, subject, refresh]);
-  useEffect(() => { if (card && !result) input.current?.focus(); }, [card, result]);
-  useEffect(() => {
-    if (view !== "review" || !queue?.next_due_at || card) return;
-    const timer = setInterval(() => setClock(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [view, queue, card]);
 
-  async function run<T>(operation: () => Promise<T>, complete: (data: T) => void) {
-    if (busy) return;
-    setBusy(true); setError("");
-    try { complete(await operation()); setRefresh((value) => value + 1); }
-    catch (err) { setError(err instanceof Error ? err.message : "Check your connection and try again."); }
-    finally { setBusy(false); }
-  }
-  function back() {
-    setView("library"); setNotes(null); setQueue(null); setResult(null); setError("");
-    setRefresh((value) => value + 1);
-  }
-  function next(lessonId: string | null, previousId: string | null = null) {
-    setView("review"); setReviewLesson(lessonId); setQueue(null); setResult(null); setAnswer("");
-    setNotes(null); setRetrying(false); request.current = null;
-    void run(() => recallRequest<RecallQueue>("/api/recall", { action: "next", studentName, schoolName, lessonId, previousId }), (data) => {
-      const now = Date.now(); setClock(now); setOffset(Date.parse(data.server_now) - now); setQueue(data);
-    });
-  }
-  function check(reveal: boolean) {
-    if (!card || busy || (!reveal && !answer.trim())) return;
-    const text = reveal ? "" : answer;
-    if (!request.current || request.current.review !== card.review_id || request.current.answer !== text || request.current.reveal !== reveal) {
-      request.current = { id: crypto.randomUUID(), review: card.review_id, answer: text, reveal };
+  useEffect(() => {
+    if (!ready || !studentName || view !== "library") return;
+    setResume(readResume(studentName, schoolName));
+  }, [ready, studentName, schoolName, view]);
+
+  useEffect(() => {
+    if (!ready || !studentName || entryHandled.current) return;
+    entryHandled.current = true;
+    if (initialMode) {
+      const saved = readResume(studentName, schoolName);
+      if (initialSessionId) {
+        showPractice({ id: initialSessionId, mode: initialMode, lessonId: initialLessonId, sectionId: initialSectionId, resume: true });
+      } else if (saved?.mode === initialMode && saved.lessonId === initialLessonId && saved.sectionId === initialSectionId) {
+        showPractice({ ...saved, resume: true });
+      } else startPractice(initialMode, initialLessonId, initialSectionId);
     }
-    const requestId = request.current.id;
-    void run(() => recallRequest<RecallResult>("/api/recall", { action: "answer", studentName, schoolName,
-      reviewId: card.review_id, requestId, answer: text, reveal }), (data) => {
-      setResult(data); setSubmittedAnswer(text); request.current = null;
-      if (data.first_attempt) setReviews((items) => items.some((item) => item.id === card.review_id)
-        ? items : [...items, { id: card.review_id, correct: data.correct }]);
-    });
+    else if (initialLessonId) void openLesson(initialLessonId, undefined, initialSectionId);
+    // Entry links are applied once, after the learning identity is ready.
+  }, [ready, studentName, initialMode, initialLessonId, initialSectionId, initialSessionId]);
+
+  useEffect(() => {
+    document.body.classList.toggle("recall-focus", focus && studentName !== "" && (view === "reading" || view === "practice"));
+    return () => document.body.classList.remove("recall-focus");
+  }, [focus, view, studentName]);
+
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "auto" }); }, [view, practice?.id, lesson?.id]);
+
+  function back() {
+    setView("library"); setCards(null); setPractice(null); setError(""); refreshLibrary();
+    window.history.replaceState(null, "", "/recall");
+  }
+  function startPractice(mode: RecallSessionMode, lessonId?: string, sectionId?: string) {
+    showPractice({ id: crypto.randomUUID(), mode, lessonId, sectionId });
+  }
+  function showPractice(next: RecallPracticeConfig) {
+    setCards(null); setError(""); setPractice(next); setView("practice");
+    const params = new URLSearchParams({ mode: next.mode, session: next.id });
+    if (next.lessonId) params.set("lesson", next.lessonId);
+    if (next.sectionId) params.set("note", next.sectionId);
+    window.history.replaceState(null, "", `/recall?${params}`);
+  }
+  async function openLesson(id: string, known?: RecallLesson, sectionId?: string) {
+    if (lock.current) return;
+    setCards(null); setPractice(null); setView("lesson"); setLesson(known ?? null); setError("");
+    const params = new URLSearchParams({ lesson: id });
+    if (sectionId) params.set("note", sectionId);
+    window.history.replaceState(null, "", `/recall?${params}`);
+    if (known && !sectionId) return;
+    lock.current = true; setBusy(true);
+    try {
+      const params = new URLSearchParams({ studentName, schoolName, lesson: id });
+      const data = await recallRequest<RecallLibrary>(`/api/recall?${params}`);
+      const found = data.lessons.find((item) => item.id === id);
+      if (!found) throw new Error("This lesson is no longer available. Choose another published lesson.");
+      setLesson(found);
+      if (sectionId) {
+        const notes = await recallRequest<{ cards: RecallCard[] }>("/api/recall", { action: "read", studentName, schoolName, lessonId: id, sectionId });
+        setCards(notes.cards); setReadingSectionId(sectionId); setView("reading"); refreshLibrary(); notifyRecallProgress();
+      }
+    } catch (err) { setError((err as Error).message); }
+    finally { lock.current = false; setBusy(false); }
+  }
+  async function readLesson() {
+    if (!activeLesson || lock.current) return;
+    lock.current = true; setBusy(true); setError("");
+    try {
+      const notes = await recallRequest<{ cards: RecallCard[] }>("/api/recall", { action: "read", studentName, schoolName, lessonId: activeLesson.id });
+      setCards(notes.cards); setReadingSectionId(undefined); setView("reading"); refreshLibrary(); notifyRecallProgress();
+      window.history.replaceState(null, "", `/recall?lesson=${activeLesson.id}`);
+    } catch (err) { setError((err as Error).message); }
+    finally { lock.current = false; setBusy(false); }
   }
   function saveName(event: FormEvent) {
     event.preventDefault();
-    localStorage.setItem("scholars-arena-name", draftName.trim());
-    localStorage.setItem("scholars-arena-school", draftSchool.trim());
-    setStudentName(draftName.trim()); setSchoolName(draftSchool.trim());
+    try {
+      localStorage.setItem("scholars-arena-name", draftName.trim()); localStorage.setItem("scholars-arena-school", draftSchool.trim());
+    } catch { /* Progress is associated with the entered identity on the server. */ }
+    setLibrary(null); setStudentName(draftName.trim()); setSchoolName(draftSchool.trim());
   }
-  const activeLesson = library?.lessons.find((item) => item.id === lesson?.id) ?? lesson;
-  const seconds = queue?.next_due_at ? Math.max(0, Math.ceil((Date.parse(queue.next_due_at) - clock - offset) / 1000)) : 0;
 
-  return <div className="mx-auto max-w-5xl space-y-6">
+  return <div className="recall-workspace mx-auto max-w-5xl space-y-7 pb-6">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><p className="text-xs uppercase tracking-widest text-sky-300">Subject notes stack</p>
-        <h1 className="font-heading text-3xl font-bold text-policeGold">Learn &amp; Recall</h1></div>
-      <Link href="/drill" className="text-sm text-white/60 hover:text-white">Back to the Arena</Link>
+      <div className="flex items-center gap-2 text-sm text-slate-400"><Layers3 size={17} className="text-sky-300" /><span className="font-medium text-slate-200">Notes &amp; Recall</span>
+        {view !== "library" ? <><ChevronRight size={14} className="text-slate-600" /><span className="text-xs">{view === "practice" ? "Practice" : view === "reading" ? "Reading" : "Lesson"}</span></> : null}</div>
+      {view === "reading" || view === "practice" ? <button className={`recall-btn min-h-11 px-3 text-xs ${focus ? "border-sky-300/20 text-sky-300" : ""}`} aria-pressed={focus} onClick={() => { setFocus(!focus); try { localStorage.setItem("scholars-arena-recall-focus", focus ? "off" : "on"); } catch { /* Use this preference for the visit. */ } }}><Focus size={15} />Focus mode {focus ? "on" : "off"}</button>
+        : <Link href="/drill" className="inline-flex min-h-11 items-center gap-2 text-xs text-slate-400 transition hover:text-white"><ArrowLeft size={14} />Back to the Arena</Link>}
     </div>
-    {!ready ? <p role="status">Loading your routine…</p> : !studentName ? <form onSubmit={saveName} className="card space-y-4">
-      <h2 className="font-bold text-xl">Save your learning identity</h2>
-      <p className="text-sm text-white/60">Use the same nickname and school on each visit so your progress stays together.</p>
-      <label className="block space-y-2">Nickname<input className={field} value={draftName} onChange={(event) => setDraftName(event.target.value)} required maxLength={80} /></label>
-      <label className="block space-y-2">School (optional)<input className={field} value={draftSchool} onChange={(event) => setDraftSchool(event.target.value)} maxLength={120} /></label>
-      <button className={button} disabled={!draftName.trim()}>Save and continue</button>
-    </form> : <>
-      <div className="flex flex-wrap items-center gap-3 text-sm text-white/50">
-        <p>Practising as {studentName}{schoolName ? ` · ${schoolName}` : ""}</p>
-        <button className="text-sky-300 underline disabled:opacity-40" disabled={busy} onClick={() => {
-          setDraftName(studentName); setDraftSchool(schoolName); setStudentName("");
-          setView("library"); setNotes(null); setQueue(null); setResult(null); setReviews([]); setError("");
-        }}>Change</button>
-      </div>
-      {view !== "library" ? <button className={secondary} onClick={back} disabled={busy}><ArrowLeft size={16} />All subject notes</button> : null}
-      {error ? <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-red-200">{error}</p> : null}
+    {!ready ? <p role="status" className="py-12 text-center text-sm text-slate-400">Loading your learning space…</p> : !studentName ? <section className="recall-panel mx-auto max-w-lg space-y-6 py-8">
+      <div><span className="mb-5 inline-flex rounded-2xl bg-sky-300/10 p-3 text-sky-300"><BrainCircuit size={28} /></span><p className="recall-eyebrow mb-2">Small steps. Lasting knowledge.</p><h1 className="font-heading text-2xl font-semibold">Make this space yours</h1><p className="mt-3 text-sm leading-7 text-slate-400">Use the same nickname and school each time. Your notes, reviews, and progress will stay together.</p></div>
+      <form onSubmit={saveName} className="space-y-4"><label className="recall-label">Nickname<input className="recall-field" value={draftName} onChange={(event) => setDraftName(event.target.value)} required maxLength={80} autoComplete="nickname" placeholder="What should we call you?" /></label>
+        <label className="recall-label">School <span className="font-normal text-slate-500">(optional)</span><input className="recall-field" value={draftSchool} onChange={(event) => setDraftSchool(event.target.value)} maxLength={120} autoComplete="organization" placeholder="Your school name" /></label>
+        <button className="recall-btn recall-btn-primary w-full" disabled={!draftName.trim()}>Enter my learning space<ArrowRight size={16} /></button></form>
+    </section> : <>
+      {view !== "practice" && view !== "reading" ? <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500"><p className="flex items-center gap-1.5"><UserRound size={14} />Studying as <span className="font-medium text-slate-300">{studentName}</span>{schoolName ? ` · ${schoolName}` : ""}</p>
+        <button className="min-h-11 px-1 text-sky-300 hover:underline disabled:opacity-40" disabled={busy} onClick={() => { setDraftName(studentName); setDraftSchool(schoolName); setStudentName(""); setLibrary(null); setView("library"); setCards(null); setPractice(null); setResume(null); setError(""); }}>Change</button></div> : null}
+      {view === "lesson" || view === "reading" ? <button className="recall-btn" disabled={busy} onClick={back}><ArrowLeft size={16} />All subject notes</button> : null}
+      {error ? <div role="alert" className="rounded-xl border border-rose-300/25 bg-rose-300/10 p-4 text-sm text-rose-200">{error}</div> : null}
+
       {view === "library" ? <>
-        {loadError ? <div role="alert" className="card space-y-3"><p>{loadError}</p><button className={secondary} onClick={() => setRefresh((v) => v + 1)}>Try again</button></div> : null}
+        {resume ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-300/20 bg-sky-300/5 p-4"><div><p className="text-sm font-semibold text-sky-200">Pick up where you left off</p><p className="mt-1 text-xs text-slate-400">{resume.title} · {resume.completed}/{resume.total} checked</p></div><button className="recall-btn" onClick={() => showPractice({ ...resume, resume: true })}><Play size={15} />Resume practice</button></div> : null}
+        <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+          <section className="relative overflow-hidden rounded-3xl border border-sky-300/20 bg-gradient-to-br from-sky-300/10 via-slate-950/70 to-slate-950 p-6 sm:p-8">
+            <div className="pointer-events-none absolute -right-6 -top-6 h-40 w-40 rounded-full bg-sky-300/5 blur-2xl" />
+            <p className="recall-eyebrow mb-4">Read. Recall. Remember.</p><h1 className="max-w-sm font-heading text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">Make knowledge<br />stay with you.</h1>
+            <p className="mt-4 max-w-md text-sm leading-7 text-slate-400">A focused note, a moment of recall, a stronger memory. Start with the questions ready for you today.</p>
+            {library && !library.stats.due_cards ? <a href="#lesson-library" className="recall-btn recall-btn-primary mt-6"><BookOpen size={16} />{library.stats.studied_cards ? "Keep learning" : "Explore your notes"}<ArrowRight size={16} /></a>
+              : <button className="recall-btn recall-btn-primary mt-6" disabled={!library || loading} onClick={() => startPractice("due")}><RotateCcw size={16} />Daily review{library?.stats.due_cards ? ` · ${library.stats.due_cards} due` : ""}<ArrowRight size={16} /></button>}
+            {library?.stats.next_due_at && !library.stats.due_cards ? <p className="mt-3 text-[11px] leading-6 text-slate-500">Next review: {recallDate(library.stats.next_due_at)}</p> : null}
+          </section>
+          <section className="flex flex-col items-start rounded-3xl border border-violet-300/15 bg-gradient-to-br from-violet-300/10 to-slate-950/80 p-6 sm:p-8">
+            <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-300/10 text-violet-300"><Shuffle size={23} /></span><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-violet-300">Connect the dots</p><h2 className="mt-2 text-xl font-semibold">The master test</h2>
+            <p className="mt-3 flex-1 text-sm leading-7 text-slate-400">Every studied question, across every subject. One fresh shuffle. See what you can recall without your notes.</p>
+            <p className="mt-5 text-xs text-violet-200">{library?.stats.studied_cards ?? 0} questions in your pool</p><button className="recall-btn mt-3 w-full border-violet-300/25" disabled={!library?.stats.studied_cards || loading} onClick={() => startPractice("master")}><Shuffle size={16} />Start master test<ArrowRight size={16} /></button>
+          </section>
+        </div>
+        {loadError ? <div role="alert" className="recall-panel space-y-3"><p className="text-sm text-rose-200">{loadError}</p><button className="recall-btn" onClick={refreshLibrary}>Try again</button></div> : null}
         {library ? <>
-          <div className="card border-sky-400/30 space-y-4">
-            <h2 className="text-xl font-bold">A little recall, every day</h2>
-            <p className="text-sm text-white/60">Start with up to 10 due questions, then learn a short new lesson. Mistakes return sooner; remembered notes return after longer gaps.</p>
-            <Stats stats={library.stats} />
-            <button className={button} onClick={() => next(null)} disabled={busy || !library.stats.studied_cards}><RotateCcw size={16} />Review my notes{library.stats.due_cards ? ` (${library.stats.due_cards} due)` : ""}</button>
-            {library.stats.next_due_at && !library.stats.due_cards ? <p className="text-xs text-white/50">Next check: {recallDate(library.stats.next_due_at)}</p> : null}
-          </div>
-          <label className="flex flex-wrap items-center gap-3 text-sm">Subject
-            <select className={`${field} max-w-sm`} value={subject} onChange={(event) => { setSubject(event.target.value); setPage(1); }}>
-              <option value="">All subjects</option>{library.subjects.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.level.toUpperCase()}</option>)}
-            </select>
-          </label>
-          {loading ? <p role="status" className="text-sm text-white/50">Updating notes…</p> : null}
-          {!library.lessons.length ? <p className="card text-white/60">Published subject notes will appear here. Choose another subject or check back after your teacher adds a lesson.</p> : null}
-          <div className="grid gap-4 md:grid-cols-2">{library.lessons.map((item) => <section key={item.id} className="card space-y-3">
-            <p className="text-xs text-sky-300">{item.subject_name} · {item.level.toUpperCase()}</p><h2 className="text-xl font-bold">{item.title}</h2>
-            <p className="text-sm text-white/60">{item.studied_cards}/{item.total_cards} started · {item.retained_cards}/{item.total_cards} retained · {item.due_cards} due</p>
-            <p className="text-sm text-white/60">Delayed recall: {recallAccuracy(item.delayed_correct, item.delayed_attempts)} ({item.delayed_correct}/{item.delayed_attempts} checks)</p>
-            <div className="flex flex-wrap gap-2"><button className={secondary} onClick={() => { setLesson(item); setNotes(null); setView("notes"); }}><BookOpen size={16} />Open lesson</button>
-              {item.studied_cards ? <button className={button} onClick={() => next(item.id)} disabled={busy}>Review</button> : null}</div>
-          </section>)}</div>
-          <div className="flex items-center justify-between gap-3"><button className={secondary} disabled={page <= 1 || loading} onClick={() => setPage((v) => v - 1)}>Previous</button>
-            <span className="text-sm text-white/50">Page {page}</span><button className={secondary} disabled={page * 12 >= library.count || loading} onClick={() => setPage((v) => v + 1)}>Next</button></div>
-        </> : !loadError ? <p role="status">Loading subject notes…</p> : null}
-      </> : view === "notes" && activeLesson ? <>
-        <h2 className="text-2xl font-bold">{activeLesson.title}</h2><Stats stats={activeLesson} />
-        {!notes ? <div className="card space-y-4">
-          <p>Read each topic, then hide the notes and type the answer to each entry from memory. The first check is ready as soon as you are.</p>
-          <div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={() => void run(() => recallRequest<{ cards: RecallCard[]; due_at: string }>("/api/recall", {
-            action: "read", studentName, schoolName, lessonId: activeLesson.id,
-          }), setNotes)}><BookOpen size={16} />{busy ? "Opening…" : "Read lesson notes"}</button>
-            {activeLesson.studied_cards ? <button className={secondary} disabled={busy} onClick={() => next(activeLesson.id)}>Review from memory</button> : null}</div>
-          {activeLesson.studied_cards ? <p className="text-xs text-white/50">Rereading starts a fresh short practice cycle. Review first to check what you retained.</p> : null}
-        </div> : <>
-          <p className="rounded-xl bg-sky-400/10 p-4 text-sm">Learn the exact answer for each entry. Capitalisation and extra spaces are ignored; words, spelling, order and punctuation must match.</p>
-          {activeLesson.introduction ? <div className="card whitespace-pre-wrap leading-7">{activeLesson.introduction}</div> : null}
-          {groupCards(notes.cards).map((group, index) => {
-            const section = group.cards[0];
-            return <section key={group.key} className="card space-y-4">
-              <h3 className="text-xl font-bold">{index + 1}. {section.heading}</h3>
-              {noteSections.map(({ kind, title }) => {
-                const items = group.cards.filter((item) => item.kind === kind);
-                if (!items.length) return null;
-                const showPrompt = kind === "terminology" || kind === "features" || kind === "other";
-                return <div key={kind} className="space-y-2">
-                  <h4 className="text-xs uppercase tracking-widest text-sky-300">{title}</h4>
-                  {items.map((item) => <div key={item.id} className="space-y-2 rounded-xl border border-white/10 p-4">
-                    {showPrompt ? <p className="font-bold whitespace-pre-wrap">{item.prompt}</p> : null}
-                    <p className="whitespace-pre-wrap leading-7">{item.answer}</p>
-                    {item.explanation ? <p className="text-sm whitespace-pre-wrap leading-6 text-white/60">{item.explanation}</p> : null}
-                  </div>)}
-                </div>;
-              })}
-            </section>;
-          })}
-          <div className="card flex flex-wrap items-center justify-between gap-3"><p className="text-sm">Your first check is ready now.</p>
-            <button className={button} disabled={busy} onClick={() => next(activeLesson.id)}><BrainCircuit size={16} />Hide notes &amp; practise</button></div>
-        </>}
-      </> : view === "review" ? <>
-        <p aria-live="polite" className="text-sm text-white/50">{reviews.length} reviewed · {reviews.filter((r) => r.correct).length} correct first time</p>
-        {reviews.length > 0 && reviews.length % 10 === 0 && result ? <p className="rounded-xl bg-sky-400/10 p-4">A good stopping point: take a break, or continue with your next due question.</p> : null}
-        {!queue ? <div className="card space-y-4"><h2 className="text-xl font-bold">Your daily recall routine</h2>
-          <p className="text-white/60">Answer from memory. Your first answer counts for this check; retries help you practise.</p>
-          <button className={button} disabled={busy} onClick={() => next(reviewLesson)}>{busy ? "Finding a question…" : "Start review"}</button></div>
-        : !card ? <div className="card space-y-4"><h2 className="text-xl font-bold">You’re up to date for now</h2>
-          <p>{queue.next_due_at ? seconds > 0 && seconds < 600 ? `Next check in ${Math.floor(seconds / 60)}m ${seconds % 60}s` : seconds === 0 ? "A review is now ready." : `Next review: ${recallDate(queue.next_due_at)}` : "Read a lesson to add questions to your routine."}</p>
-          <div className="flex flex-wrap gap-2"><button className={button} disabled={busy || seconds > 0} onClick={() => next(reviewLesson)}>Check due questions</button>
-            <button className={secondary} onClick={back}>Browse notes</button>{reviewLesson ? <button className={secondary} onClick={() => next(null)} disabled={busy}>Review all subjects</button> : null}</div></div>
-        : <section className="card space-y-5">
-          <p className="text-xs text-sky-300">{card.subject_name} · {card.lesson_title} · {card.heading}</p>
-          <p className="text-xs text-white/50">{recallKinds[card.kind]} · {retrying ? "Practice retry" : card.delayed ? "Delayed recall" : "Learning check"}</p>
-          <h2 className="text-xl font-bold whitespace-pre-wrap">{card.prompt}</h2>
-          {!result ? <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); check(false); }}>
-            <label className="block space-y-2">Type the answer from your notes<textarea ref={input} className={field} rows={6} maxLength={2000} value={answer} onChange={(event) => setAnswer(event.target.value)}
-              disabled={busy} spellCheck={false} autoCorrect="off" autoComplete="off" autoCapitalize="off" aria-describedby="recall-rules" /></label>
-            <p id="recall-rules" className="text-xs text-white/50">Use the same words, spelling, order and punctuation. Capitalisation and extra spaces are ignored.</p>
-            <div className="flex flex-wrap gap-2"><button className={button} disabled={busy || !answer.trim()}>{busy ? "Checking…" : "Check my answer"}</button>
-              <button type="button" className={secondary} disabled={busy} onClick={() => check(true)}><Eye size={16} />Show the answer</button></div>
-            <p className="text-xs text-white/50">Showing the answer counts as a miss. You can then practise it again.</p>
-          </form> : <div className="space-y-4" aria-live="polite">
-            <div className={`rounded-xl border p-4 ${result.correct ? "border-green-400/30 bg-green-400/10" : "border-amber-400/30 bg-amber-400/10"}`}>
-              <p className="font-bold">{result.correct ? "Exact match — well done." : "Read the model answer, then try again."}</p>
-              <p className="mt-1 text-sm text-white/60">{result.first_attempt ? result.delayed ? `Recorded as a ${result.correct ? "successful" : "missed"} delayed check.` : "Recorded as a learning check. Longer-term recall is tested on later days." : "Recorded as practice. This round’s first-answer result stays the same."}</p>
-            </div>
-            {!result.correct && submittedAnswer ? <div className="space-y-2"><p className="text-xs text-white/50">Your answer</p><p className="whitespace-pre-wrap border border-white/10 rounded-xl p-3">{submittedAnswer}</p><p className="text-sm text-amber-200">{firstDifference(result.expected_answer, submittedAnswer)}</p></div> : null}
-            <div className="rounded-xl bg-white/5 p-4"><p className="mb-2 text-xs text-white/50">Model answer</p><p className="whitespace-pre-wrap leading-7">{result.expected_answer}</p></div>
-            <p className="text-sm text-white/60">Next check: {recallDate(result.next_due_at)}</p>
-            <div className="flex flex-wrap gap-2">{!result.correct && !result.review_finished ? <button className={button} onClick={() => { setResult(null); setAnswer(""); setRetrying(true); }}>Hide answer &amp; retry</button> : null}
-              <button className={secondary} disabled={busy} onClick={() => next(reviewLesson, card.id)}>{result.correct ? "Next question" : "Practise another card"}<ArrowRight size={16} /></button></div>
-            {!result.correct && result.review_finished ? <p className="text-sm">Take a short break from this card. It returns in two minutes.</p> : null}
-          </div>}
-          {error ? <button className={secondary} disabled={busy} onClick={() => next(reviewLesson, card.id)}>Load the next review</button> : null}
-        </section>}
-        <p className="text-center text-xs text-white/50">10 minutes → 1 day → 3 days → 7 days → 14 days → monthly. A miss returns that entry after two minutes.</p>
-      </> : null}
-      <p className="text-xs leading-6 text-white/50">Retention uses first answers after at least 24 hours without seeing the model. Three successful delayed checks, with reviews up to date, mark a section as retained. Immediate retries do not raise retention scores.</p>
+          <section className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-semibold">Your recall at a glance</h2><Link href="/dashboard" className="inline-flex min-h-11 items-center gap-1 text-xs text-sky-300 hover:underline">Progress dashboard<ArrowRight size={14} /></Link></div><RecallStatsGrid stats={library.stats} /></section>
+          <RecallReviewNotes notes={(library.review_notes ?? []).slice(0, 4)} count={library.review_note_count ?? 0} studied={library.stats.studied_cards} onPractise={(note) => startPractice("note", note.lesson_id, note.section_id)} onRead={(note) => void openLesson(note.lesson_id, undefined, note.section_id)} />
+          <section className="space-y-5" aria-labelledby="lesson-library"><div className="flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-7"><div><p className="recall-eyebrow mb-2">Build your foundation</p><h2 id="lesson-library" className="text-2xl font-semibold tracking-tight">Your subject notes</h2></div>
+            <label className="recall-label w-full sm:w-auto"><span className="sr-only">Filter notes by subject</span><select className="recall-field sm:max-w-xs" value={subject} onChange={(event) => { setSubject(event.target.value); setPage(1); }}><option value="">All subjects</option>{library.subjects.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.level.toUpperCase()}</option>)}</select></label></div>
+            {loading ? <p role="status" className="flex items-center gap-2 text-xs text-slate-400"><Loader2 size={15} className="animate-spin" />Updating notes…</p> : null}
+            {!library.lessons.length && !loading ? <div className="recall-panel py-12 text-center"><BookOpen size={32} className="mx-auto mb-4 text-sky-300" /><h3 className="text-lg font-semibold">A little space for new knowledge</h3><p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-400">{subject ? "No published notes in this subject yet. Try another subject." : "Your teacher’s published lessons will appear here. Check back when your next lesson is ready."}</p></div> : null}
+            <div className="grid gap-4 sm:grid-cols-2">{library.lessons.map((item) => <article key={item.id} className="group flex flex-col rounded-2xl border border-white/10 bg-slate-950/50 p-5 transition hover:border-sky-300/30 sm:p-6">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2"><p className="text-[10px] font-semibold uppercase tracking-wider text-sky-300">{item.subject_name} · {item.level.toUpperCase()}</p><span className={`rounded-full px-2.5 py-1 text-[10px] ${item.due_cards ? "bg-amber-300/10 text-amber-300" : item.studied_cards ? "bg-emerald-300/10 text-emerald-300" : "bg-white/5 text-slate-400"}`}>{item.due_cards ? `${item.due_cards} due` : item.studied_cards ? "In your routine" : "New to you"}</span></div>
+              <h3 className="flex-1 text-lg font-semibold leading-7 text-white">{item.title}</h3><p className="mt-3 text-xs text-slate-500">{item.total_cards} recall questions · {item.retained_cards} retained</p>
+              <div className="mt-5 space-y-2"><div className="flex items-center justify-between gap-2 text-[11px] text-slate-500"><span>Study coverage</span><span>{item.studied_cards}/{item.total_cards}</span></div><div className="h-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sky-300/60" style={{ width: `${item.total_cards ? item.studied_cards * 100 / item.total_cards : 0}%` }} /></div></div>
+              <p className="mt-3 text-xs text-slate-400">First-try recall: {recallAccuracy(item.first_correct, item.first_attempts)}</p>
+              <div className="mt-5 flex flex-wrap gap-2"><button className="recall-btn flex-1" disabled={busy || loading} onClick={() => void openLesson(item.id, item)}><BookOpen size={16} />Open lesson</button>{item.studied_cards ? <button className="recall-btn text-sky-300" disabled={loading} onClick={() => startPractice("lesson", item.id)}><BrainCircuit size={16} />Recall</button> : null}</div>
+            </article>)}</div>
+            {library.count > 12 ? <div className="flex items-center justify-between gap-3"><button className="recall-btn" disabled={page <= 1 || loading} onClick={() => setPage((value) => value - 1)}>Previous</button><span className="text-xs text-slate-500">Page {page} of {Math.ceil(library.count / 12)}</span><button className="recall-btn" disabled={page * 12 >= library.count || loading} onClick={() => setPage((value) => value + 1)}>Next</button></div> : null}
+          </section>
+          <details className="rounded-2xl border border-white/10 p-4 text-xs leading-7 text-slate-500"><summary className="cursor-pointer font-medium text-slate-400">How is retention measured?</summary><p className="mt-2">First-try accuracy includes the first answer to each question in a session. Delayed recall counts scheduled checks begun at least 24 hours after the model answer was last shown. Three consecutive successful delayed checks, with reviews up to date, mark a question as retained. Immediate retries help you learn without raising that score.</p><p className="mt-2">Review intervals: 10 minutes → 1 day → 3 days → 7 days → 14 days → monthly. Missed answers return after two minutes.</p></details>
+        </> : !loadError ? <div role="status" className="recall-panel flex items-center justify-center gap-3 py-12 text-sm text-slate-400"><Loader2 size={20} className="animate-spin" />Loading your notes and progress…</div> : null}
+      </> : view === "lesson" ? activeLesson ? <section className="recall-panel mx-auto max-w-3xl space-y-7">
+        <div><p className="recall-eyebrow mb-4">{activeLesson.subject_name} · {activeLesson.level.toUpperCase()}</p><h1 className="font-heading text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{activeLesson.title}</h1><p className="mt-4 flex items-center gap-2 text-sm text-slate-400"><BookOpen size={16} />{activeLesson.total_cards} recall questions · A focused reading session</p></div>
+        <ol className="grid gap-4 sm:grid-cols-3">{[
+          ["01", "Read with intention", "Learn the definition, then connect it to the details."], ["02", "Hide your notes", "Recall one topic or practise the whole lesson."], ["03", "Return and remember", "Your review schedule strengthens the memory."],
+        ].map(([number, title, text]) => <li key={number} className="rounded-2xl border border-white/10 p-4"><p className="mb-3 text-xs font-bold text-sky-300">{number}</p><h2 className="text-sm font-semibold">{title}</h2><p className="mt-2 text-xs leading-6 text-slate-500">{text}</p></li>)}</ol>
+        <div className="flex flex-wrap gap-3"><button className="recall-btn recall-btn-primary" disabled={busy} onClick={() => void readLesson()}>{busy ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />}{busy ? "Opening notes…" : "Start reading"}<ArrowRight size={16} /></button>
+          {activeLesson.studied_cards ? <button className="recall-btn" disabled={busy} onClick={() => startPractice("lesson", activeLesson.id)}><BrainCircuit size={16} />Recall without reading</button> : null}</div>
+        {activeLesson.studied_cards ? <p className="flex items-start gap-2 text-xs leading-6 text-slate-500"><Clock3 size={15} className="mt-1 shrink-0" />Try recall first to check what you retained. Rereading shows the answers and restarts the lesson’s short review cycle.</p> : null}
+      </section> : busy ? <p role="status" className="py-12 text-center text-sm text-slate-400">Opening your lesson…</p> : null
+      : view === "reading" && activeLesson && cards ? <RecallReading lesson={activeLesson} cards={cards} singleNote={!!readingSectionId} busy={busy}
+        onPractiseNote={(sectionId) => startPractice("note", activeLesson.id, sectionId)} onPractiseLesson={() => startPractice("lesson", activeLesson.id)} onReadLesson={() => void readLesson()} />
+      : view === "practice" && practice ? <RecallPractice key={practice.id} config={practice} studentName={studentName} schoolName={schoolName} onExit={back}
+        onRestart={() => startPractice(practice.mode, practice.lessonId, practice.sectionId)} onRead={(id, sectionId) => void openLesson(id, undefined, sectionId)}
+        onPractiseNote={(lessonId, sectionId) => startPractice("note", lessonId, sectionId)} /> : null}
     </>}
   </div>;
 }

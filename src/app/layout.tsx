@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
         
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-12">
-          <header className="pt-8 pb-6 border-b border-white/10 mb-8">
+          <header data-site-header className="pt-8 pb-6 border-b border-white/10 mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="bg-policeGold p-2 rounded-xl text-policeBlue">
@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           
           <main className="flex-1 w-full">{children}</main>
           
-          <footer className="mt-16 text-center text-xs uppercase tracking-[0.6em] text-white/40">
+          <footer data-site-footer className="mt-16 text-center text-xs uppercase tracking-[0.6em] text-white/40">
             Keep learning, stay curious, and have fun! 📚✨
           </footer>
         </div>

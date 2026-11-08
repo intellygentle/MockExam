@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-screen bg-[#030712]">
       <div className="border-b border-white/10 bg-white/5 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-3">
             <h1 className="text-2xl font-heading font-bold text-policeGold">Admin Dashboard</h1>
             <div className="flex items-center gap-4">
               <Link href="/" className="text-sm text-white/70 hover:text-policeGold">← Home</Link>
