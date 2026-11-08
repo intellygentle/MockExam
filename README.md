@@ -16,6 +16,11 @@ server configuration and learning rules. Apply the recall migrations in order;
 existing v7 installations need `src/supabase/migration-v8-recall-refinements.sql`.
 Run `npm run test:recall` to check the engine.
 
+For AI-assisted topic uploads, follow [RECALL_TOPIC_WORKFLOW.md](RECALL_TOPIC_WORKFLOW.md).
+It documents source cleanup, missing-content completion, precise recall questions,
+safe publishing, verification, and the approved Taxation example. [AGENTS.md](AGENTS.md)
+points future coding agents to this workflow.
+
 ## Getting Started
 
 First, run the development server:

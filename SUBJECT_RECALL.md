@@ -29,6 +29,10 @@ a new account-authentication system.
 
 ## Publishing a lesson
 
+For converting a supplied file into published notes and recall questions, use the
+step-by-step [topic authoring workflow](RECALL_TOPIC_WORKFLOW.md). It includes the
+successful Taxation upload, exact payload rules, and live verification guidance.
+
 - Open the admin **Notes & Recall** tab and create a lesson. Type any subject name
   and level; matching subjects are reused and new combinations are created on save.
 - Add a title and optional introduction.
@@ -55,8 +59,9 @@ Each answer (including the whole list) is limited to 1,000 characters. Split lon
 lists into separate questions with clear prompts. Lesson saves are atomic; stale
 edits cannot overwrite newer versions. Changed question wording, answer wording,
 or answer format resets only that question's progress. Capitalisation, whitespace,
-reordering, and explanation changes preserve it. Custom subjects are reused or
-created before the lesson save.
+topic/card reordering, and explanation changes preserve it. Changing the order of
+items inside an answer list changes the model answer and resets that question.
+Custom subjects are reused or created before the lesson save.
 
 ## Learning routine
 
